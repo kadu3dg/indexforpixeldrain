@@ -1,0 +1,11 @@
+[build]
+command = "npm install && npm run build"
+output_directory = ".next"
+base_directory = "/"
+
+[build.environment]
+NODE_VERSION = "18"
+NEXT_PUBLIC_API_URL = "https://pixeldrain.com/api"
+
+[deploy]
+command = "npx wrangler pages deploy .next" 
