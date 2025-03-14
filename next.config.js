@@ -10,6 +10,8 @@ const nextConfig = {
       },
     ],
   },
+  // Configuração para Cloudflare Pages
+  output: 'standalone',
 };
 
 module.exports = nextConfig; 
