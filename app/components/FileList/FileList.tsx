@@ -104,8 +104,31 @@ export default function FileList({ pixeldrainService }: FileListProps) {
       {albums.length > 0 && (
         <AlbumList
           albums={albums}
-          onDownload={handleDownload}
-          onDelete={handleDelete}
+          onCreateAlbum={async (e) => {
+            e.preventDefault();
+            // Implementar lógica de criação de álbum aqui
+          }}
+          onDeleteFile={async (fileId) => {
+            try {
+              await pixeldrainService.deleteFile(fileId);
+              await loadFiles();
+            } catch (err) {
+              console.error('Erro ao deletar arquivo:', err);
+              setError('Erro ao deletar arquivo. Por favor, tente novamente.');
+            }
+          }}
+          onMoveFile={async (fileId, albumId) => {
+            try {
+              await pixeldrainService.addFileToAlbum(fileId, albumId);
+              await loadFiles();
+            } catch (err) {
+              console.error('Erro ao mover arquivo:', err);
+              setError('Erro ao mover arquivo. Por favor, tente novamente.');
+            }
+          }}
+          onPlayVideo={(fileId, fileName) => {
+            // Implementar lógica de reprodução de vídeo aqui
+          }}
         />
       )}
 
