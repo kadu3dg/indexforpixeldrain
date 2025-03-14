@@ -1,16 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
+  // Habilita o Edge Runtime para melhor performance no Cloudflare
+  experimental: {
+    runtime: 'edge',
+  },
+  
+  // Configuração de imagens
   images: {
-    remotePatterns: [
+    unoptimized: true, // Necessário para o Cloudflare Pages
+    domains: ['pixeldrain.com'], // Permite imagens do Pixeldrain
+  },
+
+  // Configuração de CORS para a API do Pixeldrain
+  async headers() {
+    return [
       {
-        protocol: 'https',
-        hostname: 'pixeldrain.com',
-        port: '',
-        pathname: '/api/file/**',
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
       },
-    ],
+    ];
   },
 };
 

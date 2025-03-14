@@ -2,9 +2,10 @@ export interface PixeldrainFile {
   id: string;
   name: string;
   size: number;
+  views: number;
   date_upload: string;
+  date_last_view: string;
   mime_type: string;
-  album_id?: string;
 }
 
 export interface PixeldrainAlbum {
@@ -12,102 +13,79 @@ export interface PixeldrainAlbum {
   title: string;
   description: string;
   date_created: string;
-  files: PixeldrainFile[];
+  files?: PixeldrainFile[];
 }
 
 export class PixeldrainService {
-  private apiKey: string;
-  private baseUrl = 'https://pixeldrain.com/api';
+  private apiKey?: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey?: string) {
     this.apiKey = apiKey;
   }
 
-  private async fetchLocal(endpoint: string, options: RequestInit = {}) {
-    const url = new URL('/api/pixeldrain' + endpoint, window.location.origin);
-    url.searchParams.append('apiKey', this.apiKey);
+  private async fetchWithAuth(url: string, options: RequestInit = {}) {
+    const headers = new Headers(options.headers);
+    if (this.apiKey) {
+      headers.set('Authorization', `Basic ${btoa(`${this.apiKey}:`)}`);
+    }
 
-    const response = await fetch(url.toString(), options);
-    const data = await response.json();
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
 
     if (!response.ok) {
-      throw new Error(data.error || 'Erro na requisição');
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    return response;
+  }
+
+  async listFiles(): Promise<{ files: PixeldrainFile[]; albums: PixeldrainAlbum[] }> {
+    const response = await this.fetchWithAuth('https://pixeldrain.com/api/user/files');
+    const data = await response.json();
+    return {
+      files: data.files || [],
+      albums: data.albums || []
+    };
+  }
+
+  async getAlbum(albumId: string): Promise<PixeldrainAlbum> {
+    const response = await this.fetchWithAuth(`https://pixeldrain.com/api/album/${albumId}`);
+    const data = await response.json();
     return data;
   }
 
-  async listFiles(): Promise<{ files: PixeldrainFile[], albums: PixeldrainAlbum[] }> {
-    try {
-      console.log('Iniciando listagem de arquivos e álbuns...');
-      
-      // Buscar álbuns
-      const albumsData = await this.fetchLocal('/albums');
-      const albums: PixeldrainAlbum[] = [];
-      
-      // Para cada álbum, buscar seus arquivos
-      for (const album of albumsData.albums || []) {
-        const albumFiles = await this.fetchLocal(`/albums/${album.id}`);
-        albums.push({
-          ...album,
-          files: albumFiles.files || []
-        });
-      }
-
-      // Buscar arquivos que não estão em álbuns
-      const filesData = await this.fetchLocal('/files');
-      const filesWithoutAlbum = (filesData.files || []).filter(
-        (file: PixeldrainFile) => !file.album_id
-      );
-
-      return {
-        files: filesWithoutAlbum,
-        albums: albums
-      };
-    } catch (error) {
-      console.error('Erro detalhado ao listar arquivos:', error);
-      throw new Error('Erro ao carregar arquivos. Por favor, tente novamente.');
-    }
+  getDownloadUrl(fileId: string): string {
+    return `https://pixeldrain.com/api/file/${fileId}`;
   }
 
-  async createAlbum(title: string, description: string = ''): Promise<PixeldrainAlbum> {
-    const data = await this.fetchLocal('/albums', {
+  async deleteFile(fileId: string): Promise<void> {
+    await this.fetchWithAuth(`https://pixeldrain.com/api/file/${fileId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async createAlbum(title: string, description: string): Promise<PixeldrainAlbum> {
+    const response = await this.fetchWithAuth('https://pixeldrain.com/api/album', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ title, description }),
+      body: JSON.stringify({ title, description })
     });
-    return data;
+    return response.json();
   }
 
   async addFileToAlbum(fileId: string, albumId: string): Promise<void> {
-    await this.fetchLocal(`/albums/${albumId}/files`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ file_id: fileId }),
+    await this.fetchWithAuth(`https://pixeldrain.com/api/album/${albumId}/${fileId}`, {
+      method: 'PUT'
     });
   }
 
   async removeFileFromAlbum(fileId: string, albumId: string): Promise<void> {
-    await this.fetchLocal(`/albums/${albumId}/files/${fileId}`, {
-      method: 'DELETE',
+    await this.fetchWithAuth(`https://pixeldrain.com/api/album/${albumId}/${fileId}`, {
+      method: 'DELETE'
     });
-  }
-
-  async deleteFile(fileId: string): Promise<void> {
-    await this.fetchLocal(`/files/${fileId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  getDownloadUrl(fileId: string): string {
-    return `${this.baseUrl}/file/${fileId}?download`;
-  }
-
-  getViewUrl(fileId: string): string {
-    return `https://pixeldrain.com/u/${fileId}`;
   }
 } 
