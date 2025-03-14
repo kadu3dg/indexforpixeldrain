@@ -1,0 +1,10 @@
+[build]
+command = "npm install && npm run build"
+output_directory = ".next"
+
+[site]
+bucket = ".next"
+
+[env]
+NODE_VERSION = "18"
+NEXT_PUBLIC_API_URL = "https://pixeldrain.com/api" 
