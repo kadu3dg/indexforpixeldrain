@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PixeldrainAlbum } from '../services/pixeldrain';
 import { formatDate } from '../utils/format';
 
@@ -15,8 +15,23 @@ interface AlbumListProps {
 export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveFile, onPlayVideo }: AlbumListProps) {
   const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
 
+  // Expandir o primeiro álbum por padrão quando a lista de álbuns mudar
+  useEffect(() => {
+    if (albums.length > 0 && !expandedAlbum) {
+      setExpandedAlbum(albums[0].id);
+    }
+  }, [albums, expandedAlbum]);
+
   const isVideoFile = (mimeType: string) => {
     return mimeType.startsWith('video/');
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -42,6 +57,9 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Criado em: {formatDate(album.date_created)}
                   </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {album.files ? `${album.files.length} arquivos` : 'Carregando arquivos...'}
+                  </p>
                 </div>
                 <button
                   onClick={() => setExpandedAlbum(expandedAlbum === album.id ? null : album.id)}
@@ -50,50 +68,61 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                   {expandedAlbum === album.id ? '▼' : '▶'}
                 </button>
               </div>
-              {expandedAlbum === album.id && album.files && (
+              {expandedAlbum === album.id && (
                 <div className="mt-4 space-y-2">
-                  {album.files.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <span className="text-sm text-gray-900 dark:text-white truncate flex-1">
-                        {file.name}
-                      </span>
-                      <div className="flex items-center space-x-2 ml-4">
-                        {isVideoFile(file.mime_type) && (
+                  {album.files && album.files.length > 0 ? (
+                    album.files.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <div className="flex flex-col flex-1 truncate">
+                          <span className="text-sm text-gray-900 dark:text-white truncate">
+                            {file.name}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatFileSize(file.size)} • {file.views} visualizações
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 ml-4">
+                          {isVideoFile(file.mime_type) && (
+                            <button
+                              onClick={() => onPlayVideo(file.id, file.name)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Reproduzir
+                            </button>
+                          )}
                           <button
-                            onClick={() => onPlayVideo(file.id, file.name)}
+                            onClick={() => onMoveFile(file.id, album.id)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                             </svg>
-                            Reproduzir
+                            Mover
                           </button>
-                        )}
-                        <button
-                          onClick={() => onMoveFile(file.id, album.id)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                          </svg>
-                          Mover
-                        </button>
-                        <button
-                          onClick={() => onDeleteFile(file.id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm flex items-center"
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Excluir
-                        </button>
+                          <button
+                            onClick={() => onDeleteFile(file.id)}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm flex items-center"
+                          >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Excluir
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-2">
+                      {album.files ? 'Nenhum arquivo neste álbum' : 'Carregando arquivos...'}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

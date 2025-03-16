@@ -26,22 +26,19 @@ export default function FileList({ pixeldrainService }: FileListProps) {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const loadFiles = useCallback(async (showLoadingState = true) => {
+  const loadFiles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      if (showLoadingState) {
-        setLoading(true);
-      } else {
-        setIsRefreshing(true);
-      }
-      setError(null);
-      
-      const data = await pixeldrainService.listFiles();
-      setFiles(data.files);
-      setAlbums(data.albums);
+      console.log('Iniciando carregamento de arquivos...');
+      const { files: newFiles, albums: newAlbums } = await pixeldrainService.listFiles();
+      console.log('Arquivos carregados:', newFiles.length, 'Álbuns carregados:', newAlbums.length);
+      setFiles(newFiles);
+      setAlbums(newAlbums);
       setLastUpdate(new Date());
     } catch (err) {
       console.error('Erro ao carregar arquivos:', err);
-      setError('Erro ao carregar arquivos. Por favor, tente novamente.');
+      setError(err instanceof Error ? err.message : 'Erro ao carregar arquivos. Por favor, tente novamente.');
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -56,7 +53,8 @@ export default function FileList({ pixeldrainService }: FileListProps) {
   // Atualização automática a cada 30 segundos
   useEffect(() => {
     const interval = setInterval(() => {
-      loadFiles(false);
+      setIsRefreshing(true);
+      loadFiles();
     }, 30 * 1000); // 30 segundos
 
     return () => clearInterval(interval);
@@ -116,65 +114,40 @@ export default function FileList({ pixeldrainService }: FileListProps) {
     } as PixeldrainFile);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4">
-      {/* Cabeçalho com informações de atualização */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-2">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Meus Álbuns</h1>
-          {lastUpdate && (
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Última atualização: {formatDate(lastUpdate.toISOString())}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => loadFiles(false)}
-          disabled={isRefreshing}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-            isRefreshing
-              ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
-              : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
-          } text-white transition-colors`}
-        >
-          <svg
-            className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Seus Arquivos</h1>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowNewAlbumForm(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span>{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
-        </button>
-      </div>
-
-      {error && (
-        <div className="p-4 mb-6 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-red-600 dark:text-red-400">{error}</span>
-          </div>
+            Criar Álbum
+          </button>
           <button
             onClick={() => loadFiles()}
-            className="mt-2 text-red-600 dark:text-red-400 hover:underline"
+            className={`bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded ${
+              isRefreshing ? 'opacity-50' : ''
+            }`}
+            disabled={isRefreshing}
           >
-            Tentar novamente
+            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </button>
+        </div>
+      </div>
+
+      {loading && <p className="text-center py-4">Carregando...</p>}
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p className="font-bold">Erro!</p>
+          <p>{error}</p>
+          <button 
+            onClick={() => loadFiles()} 
+            className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded"
+          >
+            Tentar Novamente
           </button>
         </div>
       )}

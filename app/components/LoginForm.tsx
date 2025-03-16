@@ -30,16 +30,18 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       });
 
       const data = await response.json();
+      console.log('Resposta da autenticação:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Erro na autenticação');
       }
 
       if (data.success === false) {
-        throw new Error(data.message || 'Chave API inválida');
+        throw new Error(data.error || 'Chave API inválida');
       }
 
       // Se chegou até aqui, a autenticação foi bem sucedida
+      console.log('Autenticação bem-sucedida');
       onLogin(cleanApiKey);
       
     } catch (err) {
@@ -76,7 +78,10 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
           </p>
         </div>
         {error && (
-          <p className="text-red-600 text-sm">{error}</p>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p className="font-bold">Erro!</p>
+            <p>{error}</p>
+          </div>
         )}
         <button
           type="submit"
