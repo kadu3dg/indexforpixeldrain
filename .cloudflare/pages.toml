@@ -10,4 +10,7 @@ NEXT_PUBLIC_API_URL = "https://pixeldrain.com/api"
 bucket = ".next"
 
 [env.production]
-vars = { NODE_ENV = "production" } 
+vars = { NODE_ENV = "production" }
+
+[deploy]
+command = "wrangler pages deploy .next" 
