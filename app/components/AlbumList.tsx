@@ -13,14 +13,34 @@ interface AlbumListProps {
 }
 
 export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveFile, onPlayVideo }: AlbumListProps) {
-  const [expandedAlbum, setExpandedAlbum] = useState<string | null>(null);
+  const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
 
   // Expandir o primeiro álbum por padrão quando a lista de álbuns mudar
   useEffect(() => {
-    if (albums.length > 0 && !expandedAlbum) {
-      setExpandedAlbum(albums[0].id);
+    if (albums.length > 0 && expandedAlbums.size === 0) {
+      setExpandedAlbums(new Set([albums[0].id]));
     }
-  }, [albums, expandedAlbum]);
+  }, [albums]);
+
+  const toggleAlbum = (albumId: string) => {
+    setExpandedAlbums(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(albumId)) {
+        newSet.delete(albumId);
+      } else {
+        newSet.add(albumId);
+      }
+      return newSet;
+    });
+  };
+
+  const expandAllAlbums = () => {
+    setExpandedAlbums(new Set(albums.map(album => album.id)));
+  };
+
+  const collapseAllAlbums = () => {
+    setExpandedAlbums(new Set());
+  };
 
   const isVideoFile = (mimeType: string) => {
     return mimeType.startsWith('video/');
@@ -36,7 +56,24 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Álbuns</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Álbuns</h2>
+        <div className="space-x-2">
+          <button
+            onClick={expandAllAlbums}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Expandir Todos
+          </button>
+          <button
+            onClick={collapseAllAlbums}
+            className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+          >
+            Recolher Todos
+          </button>
+        </div>
+      </div>
+      
       {albums.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">Nenhum álbum encontrado</p>
       ) : (
@@ -44,10 +81,10 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
           {albums.map((album) => (
             <div
               key={album.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-all duration-200 hover:shadow-lg"
             >
               <div className="flex justify-between items-start mb-4">
-                <div>
+                <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {album.title}
                   </h3>
@@ -62,14 +99,14 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                   </p>
                 </div>
                 <button
-                  onClick={() => setExpandedAlbum(expandedAlbum === album.id ? null : album.id)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  onClick={() => toggleAlbum(album.id)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
                 >
-                  {expandedAlbum === album.id ? '▼' : '▶'}
+                  {expandedAlbums.has(album.id) ? '▼' : '▶'}
                 </button>
               </div>
-              {expandedAlbum === album.id && (
-                <div className="mt-4 space-y-2">
+              {expandedAlbums.has(album.id) && (
+                <div className="mt-4 space-y-2 transition-all duration-200">
                   {album.files && album.files.length > 0 ? (
                     album.files.map((file) => (
                       <div
@@ -88,7 +125,7 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                           {isVideoFile(file.mime_type) && (
                             <button
                               onClick={() => onPlayVideo(file.id, file.name)}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center transition-colors"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -99,7 +136,7 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                           )}
                           <button
                             onClick={() => onMoveFile(file.id, album.id)}
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center transition-colors"
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -108,7 +145,7 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                           </button>
                           <button
                             onClick={() => onDeleteFile(file.id)}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm flex items-center"
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm flex items-center transition-colors"
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

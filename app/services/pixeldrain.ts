@@ -22,7 +22,7 @@ export class PixeldrainService {
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey;
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    this.baseUrl = '/api/pixeldrain';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
@@ -31,35 +31,45 @@ export class PixeldrainService {
       headers.set('Content-Type', 'application/json');
       
       if (this.apiKey) {
-        headers.set('Authorization', `Bearer ${this.apiKey}`);
+        headers.set('Authorization', `Basic ${Buffer.from(`:${this.apiKey}`).toString('base64')}`);
       }
 
+      // Usar diretamente a API do Pixeldrain em vez das rotas internas
       const url = endpoint.startsWith('http') 
         ? endpoint 
-        : `/api/pixeldrain${endpoint}`;
+        : `${this.baseUrl}${endpoint}`;
       
       console.log(`Fazendo requisição para: ${url}`);
       
-      const response = await fetch(url, {
-        ...options,
-        headers
-      });
-
-      // Tenta obter o corpo da resposta como JSON
-      let responseData;
       try {
-        responseData = await response.json();
-      } catch (e) {
-        responseData = { message: 'Não foi possível ler a resposta' };
-      }
+        const response = await fetch(url, {
+          ...options,
+          headers
+        });
 
-      if (!response.ok) {
-        console.error(`Erro na requisição: ${response.status} - ${response.statusText}`);
-        console.error('Detalhes da resposta:', responseData);
-        throw new Error(`Erro na API: ${response.status} - ${responseData.error || responseData.message || response.statusText}`);
-      }
+        // Tenta obter o corpo da resposta como JSON
+        let responseData;
+        try {
+          responseData = await response.json();
+        } catch (e) {
+          console.error('Erro ao processar JSON:', e);
+          responseData = { message: 'Não foi possível ler a resposta' };
+        }
 
-      return responseData;
+        if (!response.ok) {
+          console.error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+          console.error('Detalhes da resposta:', responseData);
+          throw new Error(`Erro na API: ${response.status} - ${responseData.error || responseData.message || response.statusText}`);
+        }
+
+        return responseData;
+      } catch (fetchError) {
+        console.error('Erro na requisição fetch:', fetchError);
+        if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
+          throw new Error('Falha na conexão com o servidor. Verifique sua conexão com a internet.');
+        }
+        throw fetchError;
+      }
     } catch (error) {
       console.error('Erro na requisição:', error);
       throw error;
@@ -68,7 +78,7 @@ export class PixeldrainService {
 
   async listFiles(): Promise<{ files: PixeldrainFile[]; albums: PixeldrainAlbum[] }> {
     try {
-      // Usar a API interna do Next.js
+      // Usar as rotas de API internas do Next.js
       const filesResponse = await this.fetchWithAuth('/files');
       const albumsResponse = await this.fetchWithAuth('/albums');
       
@@ -98,18 +108,23 @@ export class PixeldrainService {
         albums: albumsWithFiles
       };
     } catch (error) {
-      console.error('Erro na API de arquivos:', error);
+      console.error('Erro ao listar arquivos:', error);
       throw error;
     }
   }
 
   async getAlbum(albumId: string): Promise<PixeldrainAlbum> {
-    const data = await this.fetchWithAuth(`/album/${albumId}`);
-    return data;
+    try {
+      const response = await this.fetchWithAuth(`/albums/${albumId}`);
+      return response;
+    } catch (error) {
+      console.error(`Erro ao obter álbum ${albumId}:`, error);
+      throw error;
+    }
   }
 
   getDownloadUrl(fileId: string): string {
-    return `${this.baseUrl || 'https://pixeldrain.com/api'}/file/${fileId}`;
+    return `https://pixeldrain.com/api/file/${fileId}`;
   }
 
   async deleteFile(fileId: string): Promise<void> {

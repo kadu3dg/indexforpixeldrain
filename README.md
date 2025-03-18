@@ -1,93 +1,73 @@
-# Index for Pixeldrain
+# Pixeldrain Album Manager
 
-Interface web para gerenciar arquivos e álbuns no Pixeldrain.
+Um gerenciador de álbuns para o Pixeldrain, construído com Next.js e Tailwind CSS.
 
 ## Funcionalidades
 
-- Visualização de arquivos e álbuns
-- Upload de arquivos
-- Criação e gerenciamento de álbuns
-- Reprodução de vídeos
-- Interface responsiva
-- Tema claro/escuro
-- Visualização pública de álbuns
+- 📁 Visualização de álbuns e arquivos do Pixeldrain
+- 🎥 Reprodução de vídeos integrada
+- 🔄 Atualização automática de conteúdo
+- 🌓 Suporte a tema claro/escuro
+- 📱 Design responsivo
+- 🔒 Autenticação segura com API key
 
-## Tecnologias
+## Tecnologias Utilizadas
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Pixeldrain API
+- [Next.js 14](https://nextjs.org/)
+- [React](https://reactjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [TypeScript](https://www.typescriptlang.org/)
 
-## Configuração Local
+## Pré-requisitos
+
+- Node.js 18 ou superior
+- NPM ou Yarn
+- Chave API do Pixeldrain
+
+## Instalação
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/kadu3dg/indexforpixeldrain.git
-cd indexforpixeldrain
+git clone https://github.com/seu-usuario/pixeldrain-album-manager.git
+cd pixeldrain-album-manager
 ```
 
 2. Instale as dependências:
 ```bash
 npm install
+# ou
+yarn install
 ```
 
-3. Copie o arquivo de exemplo de variáveis de ambiente:
-```bash
-cp .env.example .env.local
+3. Crie um arquivo `.env.local` com as seguintes variáveis:
+```env
+NEXT_PUBLIC_API_URL=https://pixeldrain.com/api
 ```
 
-4. Configure suas variáveis de ambiente no arquivo `.env.local`
-
-5. Execute o projeto em desenvolvimento:
+4. Inicie o servidor de desenvolvimento:
 ```bash
 npm run dev
+# ou
+yarn dev
 ```
 
-## Deploy no Cloudflare Pages
-
-1. Faça fork deste repositório no GitHub
-
-2. Acesse o [Cloudflare Pages](https://pages.cloudflare.com)
-
-3. Clique em "Create a project"
-
-4. Conecte sua conta do GitHub e selecione o repositório
-
-5. Configure o projeto:
-   - Framework preset: Next.js
-   - Build command: `npm run build`
-   - Build output directory: `.next`
-   - Node.js version: 18.x
-
-6. Configure as variáveis de ambiente (opcional):
-   - PIXELDRAIN_API_KEY: Sua chave da API do Pixeldrain
-   - NEXT_PUBLIC_API_URL: URL base da API
-
-7. Clique em "Save and Deploy"
+5. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 ## Uso
 
-### Visualização Pública de Álbuns
-
-Para compartilhar um álbum publicamente:
-
-1. Copie o ID do álbum do Pixeldrain
-2. Compartilhe o link no formato: `https://seu-dominio.pages.dev/album/ID_DO_ALBUM`
-
-Os usuários poderão:
-- Ver todos os arquivos do álbum
-- Fazer download dos arquivos
-- Reproduzir vídeos diretamente no navegador
+1. Faça login usando sua chave API do Pixeldrain
+2. Visualize seus álbuns e arquivos
+3. Crie novos álbuns e gerencie arquivos
+4. Reproduza vídeos diretamente na interface
 
 ## Contribuição
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Faça commit das alterações (`git commit -am 'Adiciona nova feature'`)
-4. Faça push para a branch (`git push origin feature/nova-feature`)
+1. Faça um Fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
 
 ## Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
