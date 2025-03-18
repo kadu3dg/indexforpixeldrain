@@ -35,6 +35,8 @@ jobs:
         with:
           # Gera saída estática em vez de resposta do servidor
           static_site_generator: next
+          # Habilitar GitHub Pages se não estiver habilitado
+          enablement: true
       - name: Restore cache
         uses: actions/cache@v4
         with:
