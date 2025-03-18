@@ -25,7 +25,6 @@ jobs:
     env:
       NEXT_PUBLIC_BASE_PATH: /indexforpixeldrain
       NEXT_PUBLIC_API_URL: https://pixeldrain.com/api
-      NODE_OPTIONS: --trace-warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,12 +65,8 @@ jobs:
           echo "NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
       - name: Build with Next.js
         run: |
-          # Primeiro, remova temporariamente as pastas de API
-          mv app/api app/api_backup || true
           # Executar o build com verbosidade máxima
-          npm run build --verbose
-          # Restaurar a pasta API
-          mv app/api_backup app/api || true
+          npm run build
           mkdir -p out
           touch out/.nojekyll
       - name: Upload artifact
