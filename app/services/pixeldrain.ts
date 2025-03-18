@@ -25,69 +25,55 @@ export class PixeldrainService {
     this.apiKey = apiKey || '484028b7-6e91-4fa2-a397-da34daf7ebde';
   }
 
-  // Versão estática simplificada para o GitHub Pages
+  // Versão para buscar arquivos reais do Pixeldrain
   async getFiles() {
-    // No ambiente estático, retornamos dados de exemplo
-    return {
-      success: true,
-      files: [
-        {
-          id: 'example1',
-          name: 'Exemplo 1.jpg',
-          size: 1024,
-          date_upload: new Date().toISOString(),
-          mime_type: 'image/jpeg'
-        },
-        {
-          id: 'example2',
-          name: 'Exemplo 2.mp4',
-          size: 10485760,
-          date_upload: new Date().toISOString(),
-          mime_type: 'video/mp4'
-        }
-      ]
-    };
+    try {
+      // Usar a API real do Pixeldrain para buscar os arquivos
+      const response = await this.fetchWithAuth('/user/files');
+      console.log('Resposta da API de arquivos:', response);
+      return response;
+    } catch (error) {
+      console.error('Erro ao buscar arquivos:', error);
+      // Em caso de erro, retornar um objeto vazio com array de arquivos vazio
+      return {
+        success: false,
+        files: []
+      };
+    }
   }
 
   // Versão estática simplificada para o GitHub Pages
   async getAlbums() {
-    // No ambiente estático, retornamos dados de exemplo
-    return {
-      success: true,
-      albums: [
-        {
-          id: 'example-album',
-          title: 'Álbum de Exemplo',
-          description: 'Este é um álbum de exemplo para a versão estática',
-          date_created: new Date().toISOString(),
-          file_count: 2
-        }
-      ]
-    };
+    try {
+      // Usar a API real do Pixeldrain em vez de dados estáticos
+      const response = await this.fetchWithAuth('/user/albums');
+      console.log('Resposta da API de álbuns:', response);
+      return response;
+    } catch (error) {
+      console.error('Erro ao buscar álbuns:', error);
+      // Em caso de erro, retornar um objeto vazio com array de álbuns vazio
+      return {
+        success: false,
+        albums: []
+      };
+    }
   }
 
   // Versão estática simplificada para o GitHub Pages
   async getAlbumFiles(albumId: string) {
-    // No ambiente estático, retornamos dados de exemplo
-    return {
-      success: true,
-      files: [
-        {
-          id: 'example1',
-          name: 'Exemplo 1.jpg',
-          size: 1024,
-          date_upload: new Date().toISOString(),
-          mime_type: 'image/jpeg'
-        },
-        {
-          id: 'example2',
-          name: 'Exemplo 2.mp4',
-          size: 10485760,
-          date_upload: new Date().toISOString(),
-          mime_type: 'video/mp4'
-        }
-      ]
-    };
+    try {
+      // Usar a API real do Pixeldrain para buscar os arquivos do álbum
+      const response = await this.fetchWithAuth(`/album/${albumId}`);
+      console.log(`Resposta da API para o álbum ${albumId}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`Erro ao buscar arquivos do álbum ${albumId}:`, error);
+      // Em caso de erro, retornar um objeto vazio com array de arquivos vazio
+      return {
+        success: false,
+        files: []
+      };
+    }
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {

@@ -14,11 +14,19 @@ export default function Home() {
         setLoading(true);
         const pixeldrainService = new PixeldrainService();
         const response = await pixeldrainService.getAlbums();
-        setAlbums(response.albums || []);
-        setError(null);
+        
+        // Verifique se a resposta foi bem-sucedida
+        if (response.success === false) {
+          setError('Não foi possível acessar a API do Pixeldrain. Verifique sua conexão ou se a chave API é válida.');
+          setAlbums([]);
+        } else {
+          setAlbums(response.albums || []);
+          setError(null);
+        }
       } catch (err) {
         console.error('Erro ao buscar álbuns:', err);
-        setError('Não foi possível carregar os álbuns. Por favor, tente novamente mais tarde.');
+        setError('Erro ao conectar-se ao Pixeldrain. Por favor, verifique sua chave API e tente novamente.');
+        setAlbums([]);
       } finally {
         setLoading(false);
       }
