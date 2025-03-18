@@ -42,6 +42,7 @@ yarn install
 3. Crie um arquivo `.env.local` com as seguintes variáveis:
 ```env
 NEXT_PUBLIC_API_URL=https://pixeldrain.com/api
+NEXT_PUBLIC_API_KEY=sua-chave-api-aqui
 ```
 
 4. Inicie o servidor de desenvolvimento:
@@ -53,12 +54,40 @@ yarn dev
 
 5. Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
+## Configuração da Chave API
+
+Para utilizar o Pixeldrain Album Manager, você precisa configurar sua chave API do Pixeldrain:
+
+1. Crie uma conta no [Pixeldrain](https://pixeldrain.com/)
+2. Acesse suas configurações de conta
+3. Gere uma chave API
+4. Configure a chave API de uma das seguintes formas:
+
+### Opção 1: Arquivo .env.local
+
+Adicione sua chave API no arquivo `.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=https://pixeldrain.com/api
+NEXT_PUBLIC_API_KEY=sua-chave-api-aqui
+```
+
+### Opção 2: Modificar diretamente o código
+
+Abra o arquivo `app/services/pixeldrain.ts` e substitua a chave API padrão pela sua:
+
+```typescript
+export class PixeldrainService {
+  private apiKey: string = 'sua-chave-api-aqui';
+  // ...
+}
+```
+
 ## Uso
 
-1. Faça login usando sua chave API do Pixeldrain
-2. Visualize seus álbuns e arquivos
-3. Crie novos álbuns e gerencie arquivos
-4. Reproduza vídeos diretamente na interface
+1. Visualize seus álbuns e arquivos
+2. Crie novos álbuns e gerencie arquivos
+3. Reproduza vídeos diretamente na interface
 
 ## Contribuição
 

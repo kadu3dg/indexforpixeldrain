@@ -18,11 +18,11 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private apiKey: string = '484028b7-6e91-4fa2-a397-da34daf7ebde';
+  private apiKey: string = 'a79a8e71-2813-4295-8617-bf9a23830060';
   private baseUrl: string = 'https://pixeldrain.com/api';
 
-  constructor(apiKey: string = '484028b7-6e91-4fa2-a397-da34daf7ebde') {
-    this.apiKey = apiKey || '484028b7-6e91-4fa2-a397-da34daf7ebde';
+  constructor(apiKey: string = 'a79a8e71-2813-4295-8617-bf9a23830060') {
+    this.apiKey = apiKey || 'a79a8e71-2813-4295-8617-bf9a23830060';
   }
 
   // Versão para buscar arquivos reais do Pixeldrain
