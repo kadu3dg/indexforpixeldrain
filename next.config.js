@@ -11,8 +11,12 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // Configuração para Cloudflare Pages
-  output: 'standalone',
+  // Configuração para GitHub Pages
+  output: 'export',
+  // Define o caminho base para o GitHub Pages
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  // Disable server functionality
+  trailingSlash: true,
   // Desabilitar a verificação de tipos durante o build
   typescript: {
     ignoreBuildErrors: true,

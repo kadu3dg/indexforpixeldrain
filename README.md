@@ -71,3 +71,16 @@ yarn dev
 ## Licença
 
 Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## Deploy
+
+### GitHub Pages
+
+Este projeto está configurado para ser hospedado automaticamente no GitHub Pages usando GitHub Actions.
+
+1. Vá para seu repositório no GitHub
+2. Clique em "Settings" > "Pages"
+3. Em "Build and deployment", selecione a fonte como "GitHub Actions"
+4. Após configurar, cada push para a branch `main` irá automaticamente fazer deploy da aplicação
+
+URL do site: https://kadu3dg.github.io/indexforpixeldrain/
