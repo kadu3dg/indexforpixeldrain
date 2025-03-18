@@ -20,6 +20,7 @@ export interface PixeldrainAlbum {
 export class PixeldrainService {
   private apiKey: string = 'a79a8e71-2813-4295-8617-bf9a23830060';
   private baseUrl: string = 'https://pixeldrain.com/api';
+  private useProxy: boolean = true; // Usar o proxy para evitar problemas de CORS
 
   constructor(apiKey: string = 'a79a8e71-2813-4295-8617-bf9a23830060') {
     this.apiKey = apiKey || 'a79a8e71-2813-4295-8617-bf9a23830060';
@@ -83,34 +84,105 @@ export class PixeldrainService {
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     try {
+      // Verificar se a API key está definida e não vazia
+      if (!this.apiKey || !this.apiKey.trim()) {
+        console.error('API key está vazia');
+        return {
+          success: false,
+          error: 'API key não fornecida'
+        };
+      }
+
+      // Remover o trailing slash do endpoint se existir
+      const path = endpoint.startsWith('/') 
+        ? endpoint 
+        : `/${endpoint}`;
+
+      if (this.useProxy) {
+        // Usar o proxy interno para evitar problemas de CORS
+        return this.fetchWithProxy(path, options);
+      } else {
+        // Usar diretamente a API do Pixeldrain (pode ter problemas de CORS)
+        return this.fetchDirectApi(path, options);
+      }
+    } catch (error) {
+      console.error('Erro na requisição:', error);
+      // Retornar um objeto de erro em vez de lançar exceção
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido na requisição'
+      };
+    }
+  }
+
+  // Método para fazer requisições através do proxy interno
+  private async fetchWithProxy(path: string, options: RequestInit = {}) {
+    try {
+      // Construir a URL para o proxy
+      const proxyUrl = new URL('/api/pixeldrain-proxy', window.location.origin);
+      
+      // Adicionar o caminho da API e a apiKey como parâmetros de consulta
+      proxyUrl.searchParams.append('path', path);
+      proxyUrl.searchParams.append('apiKey', this.apiKey);
+      
+      console.log(`[Proxy] Fazendo requisição para: ${proxyUrl.toString()}`);
+      
+      // Configurar as opções da requisição
+      const fetchOptions: RequestInit = {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+      };
+      
+      // Fazer a requisição para o proxy
+      const response = await fetch(proxyUrl.toString(), fetchOptions);
+      
+      // Processar a resposta
+      const data = await response.json();
+      
+      // Verificar se houve erro na requisição
+      if (!response.ok) {
+        console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
+        return {
+          success: false,
+          error: data.error || `Erro ${response.status}: ${response.statusText}`
+        };
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('[Proxy] Erro ao usar proxy:', error);
+      return {
+        success: false,
+        error: error instanceof Error 
+          ? `Erro ao usar proxy: ${error.message}` 
+          : 'Erro desconhecido ao usar proxy'
+      };
+    }
+  }
+
+  // Método para fazer requisições diretamente à API do Pixeldrain (pode ter problemas de CORS)
+  private async fetchDirectApi(path: string, options: RequestInit = {}) {
+    try {
       const headers = new Headers(options.headers);
       headers.set('Content-Type', 'application/json');
       
-      if (this.apiKey) {
-        // Verificar se a API key está definida e não vazia
-        if (!this.apiKey.trim()) {
-          console.error('API key está vazia');
-          return {
-            success: false,
-            error: 'API key não fornecida'
-          };
+      // Usar Basic Auth com a chave API do Pixeldrain
+      const authString = `:${this.apiKey}`;
+      let base64Auth;
+      try {
+        // Tentar usar btoa para navegadores
+        if (typeof btoa === 'function') {
+          base64Auth = btoa(authString);
+        } else {
+          // Fallback para Node.js
+          base64Auth = Buffer.from(authString).toString('base64');
         }
-        
-        // Usar Basic Auth com a chave API do Pixeldrain
-        const authString = `:${this.apiKey}`;
-        let base64Auth;
-        try {
-          // Tentar usar btoa para navegadores
-          if (typeof btoa === 'function') {
-            base64Auth = btoa(authString);
-          } else {
-            // Fallback para Node.js
-            base64Auth = Buffer.from(authString).toString('base64');
-          }
-          headers.set('Authorization', `Basic ${base64Auth}`);
-        } catch (e) {
-          console.error('Erro ao codificar credenciais:', e);
-        }
+        headers.set('Authorization', `Basic ${base64Auth}`);
+      } catch (e) {
+        console.error('Erro ao codificar credenciais:', e);
       }
 
       // Remover o trailing slash do baseUrl se existir
@@ -118,17 +190,10 @@ export class PixeldrainService {
         ? this.baseUrl.slice(0, -1) 
         : this.baseUrl;
       
-      // Adicionar o leading slash do endpoint se não existir
-      const path = endpoint.startsWith('/') 
-        ? endpoint 
-        : `/${endpoint}`;
-      
       // Construir a URL completa
-      const url = endpoint.startsWith('http') 
-        ? endpoint 
-        : `${baseUrl}${path}`;
+      const url = `${baseUrl}${path}`;
       
-      console.log(`Fazendo requisição para: ${url}`);
+      console.log(`[Direct] Fazendo requisição para: ${url}`);
       
       // Criar um controlador de timeout
       const controller = new AbortController();
@@ -144,13 +209,6 @@ export class PixeldrainService {
         // Usar o sinal do controlador para timeout
         signal: controller.signal
       };
-
-      console.log('Opções de fetch:', {
-        url,
-        method: options.method || 'GET',
-        mode: fetchOptions.mode,
-        credentials: fetchOptions.credentials
-      });
 
       try {
         const response = await fetch(url, fetchOptions);
@@ -189,10 +247,12 @@ export class PixeldrainService {
         if (errorMessage.includes('NetworkError') || 
             errorMessage.includes('Failed to fetch') || 
             errorMessage.includes('CORS')) {
-          return {
-            success: false,
-            error: 'Não foi possível conectar ao servidor Pixeldrain devido a restrições de CORS. Isso pode acontecer devido às políticas de segurança do navegador.'
-          };
+          // Se encontrarmos um erro de CORS, ativar o modo proxy para as próximas requisições
+          this.useProxy = true;
+          console.log('[Direct] Detectado erro de CORS, alternando para modo proxy');
+          
+          // Tentar novamente usando o proxy
+          return this.fetchWithProxy(path, options);
         }
         
         // Se for um erro de timeout (AbortError)
@@ -210,11 +270,10 @@ export class PixeldrainService {
         };
       }
     } catch (error) {
-      console.error('Erro na requisição:', error);
-      // Retornar um objeto de erro em vez de lançar exceção
+      console.error('[Direct] Erro na requisição direta:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido na requisição'
+        error: error instanceof Error ? error.message : 'Erro desconhecido na requisição direta'
       };
     }
   }
