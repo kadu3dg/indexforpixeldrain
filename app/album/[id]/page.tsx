@@ -39,7 +39,7 @@ export default function AlbumPage({ params }: AlbumPageProps) {
           </p>
           <div className="flex justify-center">
             <a 
-              href="/"
+              href="/indexforpixeldrain"
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
             >
               Voltar para o Início

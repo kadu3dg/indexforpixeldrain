@@ -26,9 +26,16 @@ export default function Home() {
               href="https://pixeldrain.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition mr-4"
             >
               Visitar Pixeldrain
+            </a>
+            
+            <a 
+              href="/indexforpixeldrain/album/example-album" 
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+            >
+              Ver Álbum de Exemplo
             </a>
           </div>
         </div>
