@@ -87,13 +87,30 @@ export class PixeldrainService {
       headers.set('Content-Type', 'application/json');
       
       if (this.apiKey) {
+        // Verificar se a API key está definida e não vazia
+        if (!this.apiKey.trim()) {
+          console.error('API key está vazia');
+          return {
+            success: false,
+            error: 'API key não fornecida'
+          };
+        }
+        
         // Usar Basic Auth com a chave API do Pixeldrain
         const authString = `:${this.apiKey}`;
-        const base64Auth = typeof btoa === 'function' 
-          ? btoa(authString) 
-          : Buffer.from(authString).toString('base64');
-        
-        headers.set('Authorization', `Basic ${base64Auth}`);
+        let base64Auth;
+        try {
+          // Tentar usar btoa para navegadores
+          if (typeof btoa === 'function') {
+            base64Auth = btoa(authString);
+          } else {
+            // Fallback para Node.js
+            base64Auth = Buffer.from(authString).toString('base64');
+          }
+          headers.set('Authorization', `Basic ${base64Auth}`);
+        } catch (e) {
+          console.error('Erro ao codificar credenciais:', e);
+        }
       }
 
       // Remover o trailing slash do baseUrl se existir
@@ -113,37 +130,85 @@ export class PixeldrainService {
       
       console.log(`Fazendo requisição para: ${url}`);
       
+      // Criar um controlador de timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      
       const fetchOptions: RequestInit = {
         ...options,
         headers,
-        // Modo no-cors pode causar problemas, usar cors ou same-origin
+        // Tentar com 'cors' primeiro
         mode: 'cors',
-        // Remover credentials que pode causar problemas de CORS
-        credentials: 'omit'
+        // Omitir credenciais para evitar problemas com CORS
+        credentials: 'omit',
+        // Usar o sinal do controlador para timeout
+        signal: controller.signal
       };
 
-      const response = await fetch(url, fetchOptions);
+      console.log('Opções de fetch:', {
+        url,
+        method: options.method || 'GET',
+        mode: fetchOptions.mode,
+        credentials: fetchOptions.credentials
+      });
 
-      // Tenta obter o corpo da resposta como JSON
-      let responseData;
       try {
-        responseData = await response.json();
-      } catch (e) {
-        console.error('Erro ao processar JSON:', e);
-        responseData = { success: false, message: 'Não foi possível ler a resposta' };
-      }
+        const response = await fetch(url, fetchOptions);
+        // Limpar o timeout já que a resposta foi recebida
+        clearTimeout(timeoutId);
+        
+        // Tenta obter o corpo da resposta como JSON
+        let responseData;
+        try {
+          responseData = await response.json();
+        } catch (e) {
+          console.error('Erro ao processar JSON:', e);
+          responseData = { success: false, message: 'Não foi possível ler a resposta' };
+        }
 
-      if (!response.ok) {
-        console.error(`Erro na requisição: ${response.status} - ${response.statusText}`);
-        console.error('Detalhes da resposta:', responseData);
-        // Retornar o erro em vez de lançar, para permitir tratamento adequado
+        if (!response.ok) {
+          console.error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+          console.error('Detalhes da resposta:', responseData);
+          // Retornar o erro em vez de lançar, para permitir tratamento adequado
+          return {
+            success: false,
+            error: `Erro na API: ${response.status} - ${responseData.error || responseData.message || response.statusText}`
+          };
+        }
+
+        return responseData;
+      } catch (fetchError) {
+        // Limpar o timeout em caso de erro também
+        clearTimeout(timeoutId);
+        
+        // Tratar erros de rede
+        console.error('Erro de rede na requisição:', fetchError);
+        
+        // Verificar se é um erro de CORS
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'Erro desconhecido';
+        if (errorMessage.includes('NetworkError') || 
+            errorMessage.includes('Failed to fetch') || 
+            errorMessage.includes('CORS')) {
+          return {
+            success: false,
+            error: 'Não foi possível conectar ao servidor Pixeldrain devido a restrições de CORS. Isso pode acontecer devido às políticas de segurança do navegador.'
+          };
+        }
+        
+        // Se for um erro de timeout (AbortError)
+        if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+          return {
+            success: false,
+            error: 'A requisição excedeu o tempo limite. Verifique sua conexão com a internet ou tente novamente mais tarde.'
+          };
+        }
+        
+        // Qualquer outro erro
         return {
           success: false,
-          error: `Erro na API: ${response.status} - ${responseData.error || responseData.message || response.statusText}`
+          error: errorMessage
         };
       }
-
-      return responseData;
     } catch (error) {
       console.error('Erro na requisição:', error);
       // Retornar um objeto de erro em vez de lançar exceção

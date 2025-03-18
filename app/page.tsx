@@ -71,12 +71,26 @@ export default function Home() {
 
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              <p className="flex items-center">
+              <p className="flex items-center mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 {error}
               </p>
+              <div className="text-sm border-t border-red-200 pt-2 mt-2">
+                <p className="font-semibold mb-1">Possíveis soluções:</p>
+                <ul className="list-disc pl-5 mb-3">
+                  <li>Verifique se a chave API está correta em <code className="bg-red-50 px-1 rounded">app/services/pixeldrain.ts</code></li>
+                  <li>A API do Pixeldrain pode estar com problemas de CORS. Tente usar uma extensão de navegador para desabilitar CORS ou uma proxy CORS.</li>
+                  <li>Verifique sua conexão com a internet.</li>
+                </ul>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm transition-colors"
+                >
+                  Tentar novamente
+                </button>
+              </div>
             </div>
           )}
 
