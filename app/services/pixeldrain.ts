@@ -13,6 +13,7 @@ export interface PixeldrainAlbum {
   title: string;
   description: string;
   date_created: string;
+  file_count?: number;
   files?: PixeldrainFile[];
 }
 
