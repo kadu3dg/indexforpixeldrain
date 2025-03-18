@@ -1,56 +1,42 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import LoginForm from './components/LoginForm';
-import FileList from './components/FileList';
-import { PixeldrainService } from './services/pixeldrain';
+// Versão simplificada para exportação estática
 
 export default function Home() {
-  const [pixeldrainService, setPixeldrainService] = useState<PixeldrainService | null>(null);
-
-  useEffect(() => {
-    // Tenta recuperar a chave API do localStorage
-    const savedKey = localStorage.getItem('pixeldrain_api_key');
-    if (savedKey) {
-      const service = new PixeldrainService(savedKey);
-      setPixeldrainService(service);
-    }
-  }, []);
-
-  const handleLogin = (apiKey: string) => {
-    try {
-      console.log('Tentando criar serviço com a chave API');
-      const service = new PixeldrainService(apiKey);
-      setPixeldrainService(service);
-      // Salva a chave API no localStorage
-      localStorage.setItem('pixeldrain_api_key', apiKey);
-    } catch (error) {
-      console.error('Erro ao criar serviço:', error);
-    }
-  };
-
-  const handleLogout = () => {
-    setPixeldrainService(null);
-    localStorage.removeItem('pixeldrain_api_key');
-  };
-
   return (
-    <main className="container mx-auto px-4 py-8">
-      {!pixeldrainService ? (
-        <LoginForm onLogin={handleLogin} />
-      ) : (
-        <div>
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Pixeldrain Album Manager
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            Uma interface web para gerenciar seus álbuns no Pixeldrain
+          </p>
+        </header>
+
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            Bem-vindo!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Este site permite que você gerencie seus arquivos e álbuns no Pixeldrain.
+            Para começar, você precisará de uma chave API do Pixeldrain.
+          </p>
+          <div className="flex justify-center">
+            <a 
+              href="https://pixeldrain.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
             >
-              Sair
-            </button>
+              Visitar Pixeldrain
+            </a>
           </div>
-          <FileList pixeldrainService={pixeldrainService} />
         </div>
-      )}
-    </main>
+
+        <footer className="text-center text-gray-500 dark:text-gray-400 text-sm">
+          &copy; {new Date().getFullYear()} Pixeldrain Album Manager
+        </footer>
+      </div>
+    </div>
   );
 } 

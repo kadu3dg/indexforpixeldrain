@@ -1,21 +1,20 @@
-import { Inter } from "next/font/google";
-import "./globals.css";
-import ClientLayout from "./components/ClientLayout";
-import { metadata } from "./metadata";
+import type { Metadata } from 'next';
+import './globals.css';
 
-const inter = Inter({ subsets: ["latin"] });
-
-export { metadata };
+export const metadata: Metadata = {
+  title: 'Pixeldrain Album Manager',
+  description: 'Gerencie seus álbuns e arquivos no Pixeldrain',
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
-        <ClientLayout>{children}</ClientLayout>
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {children}
       </body>
     </html>
   );

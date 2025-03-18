@@ -25,6 +25,7 @@ jobs:
     env:
       NEXT_PUBLIC_BASE_PATH: /indexforpixeldrain
       NEXT_PUBLIC_API_URL: https://pixeldrain.com/api
+      NODE_OPTIONS: --trace-warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,6 +41,9 @@ jobs:
           static_site_generator: next
           # Habilitar GitHub Pages se não estiver habilitado
           enablement: true
+      - name: List directory structure
+        run: |
+          find . -type d | sort
       - name: Restore cache
         uses: actions/cache@v4
         with:
@@ -62,7 +66,12 @@ jobs:
           echo "NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
       - name: Build with Next.js
         run: |
-          npm run build
+          # Primeiro, remova temporariamente as pastas de API
+          mv app/api app/api_backup || true
+          # Executar o build com verbosidade máxima
+          npm run build --verbose
+          # Restaurar a pasta API
+          mv app/api_backup app/api || true
           mkdir -p out
           touch out/.nojekyll
       - name: Upload artifact
