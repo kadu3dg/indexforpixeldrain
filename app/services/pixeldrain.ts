@@ -17,12 +17,76 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private apiKey?: string;
-  private baseUrl: string;
+  private apiKey: string = '';
+  private baseUrl: string = 'https://pixeldrain.com/api';
 
-  constructor(apiKey?: string) {
+  constructor(apiKey: string = '') {
     this.apiKey = apiKey;
-    this.baseUrl = '/api/pixeldrain';
+  }
+
+  // Versão estática simplificada para o GitHub Pages
+  async getFiles() {
+    // No ambiente estático, retornamos dados de exemplo
+    return {
+      success: true,
+      files: [
+        {
+          id: 'example1',
+          name: 'Exemplo 1.jpg',
+          size: 1024,
+          date_upload: new Date().toISOString(),
+          mime_type: 'image/jpeg'
+        },
+        {
+          id: 'example2',
+          name: 'Exemplo 2.mp4',
+          size: 10485760,
+          date_upload: new Date().toISOString(),
+          mime_type: 'video/mp4'
+        }
+      ]
+    };
+  }
+
+  // Versão estática simplificada para o GitHub Pages
+  async getAlbums() {
+    // No ambiente estático, retornamos dados de exemplo
+    return {
+      success: true,
+      albums: [
+        {
+          id: 'example-album',
+          title: 'Álbum de Exemplo',
+          description: 'Este é um álbum de exemplo para a versão estática',
+          date_created: new Date().toISOString(),
+          file_count: 2
+        }
+      ]
+    };
+  }
+
+  // Versão estática simplificada para o GitHub Pages
+  async getAlbumFiles(albumId: string) {
+    // No ambiente estático, retornamos dados de exemplo
+    return {
+      success: true,
+      files: [
+        {
+          id: 'example1',
+          name: 'Exemplo 1.jpg',
+          size: 1024,
+          date_upload: new Date().toISOString(),
+          mime_type: 'image/jpeg'
+        },
+        {
+          id: 'example2',
+          name: 'Exemplo 2.mp4',
+          size: 10485760,
+          date_upload: new Date().toISOString(),
+          mime_type: 'video/mp4'
+        }
+      ]
+    };
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
