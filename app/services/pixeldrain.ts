@@ -18,12 +18,24 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private apiKey: string = 'a79a8e71-2813-4295-8617-bf9a23830060';
+  // Chave API do Pixeldrain - IMPORTANTE: verifique se a chave está correta
+  // Formato da chave: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (UUID)
+  private apiKey: string;
   private baseUrl: string = 'https://pixeldrain.com/api';
   private useProxy: boolean = true; // Usar o proxy para evitar problemas de CORS
 
-  constructor(apiKey: string = 'a79a8e71-2813-4295-8617-bf9a23830060') {
-    this.apiKey = apiKey || 'a79a8e71-2813-4295-8617-bf9a23830060';
+  // É possível usar a aplicação sem API key, mas a autenticação será limitada
+  constructor(apiKey?: string) {
+    // Verificar se a apiKey foi fornecida, caso contrário usar a default
+    if (apiKey && apiKey.trim().length > 0) {
+      this.apiKey = apiKey.trim();
+    } else {
+      // A chave default está definida aqui
+      this.apiKey = 'a79a8e71-2813-4295-8617-bf9a23830060';
+    }
+    
+    console.log('PixeldrainService inicializado com a chave: ' + 
+      this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
   }
 
   // Método para obter os arquivos do usuário
@@ -57,15 +69,30 @@ export class PixeldrainService {
   // Método para obter os álbuns do usuário
   async getAlbums() {
     try {
-      console.log('Tentando buscar álbuns com a chave API:', this.apiKey);
+      console.log('Tentando buscar álbuns com a chave API:', 
+        this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
       
-      // IMPORTANTE: A rota correta para os álbuns do usuário é /user/albums e não apenas /albums
+      // IMPORTANTE: A rota correta para os álbuns do usuário é /user/albums
       const response = await this.fetchWithAuth('/user/albums');
       console.log('Resposta da API de álbuns:', response);
       
       // Verificar se a resposta contém erro
       if (response.success === false) {
         console.error('Erro ao buscar álbuns:', response.error);
+        
+        // Verificar se o erro é de autenticação
+        if (response.error && (
+          response.error.includes('401') || 
+          response.error.includes('autenticação') || 
+          response.error.includes('authentication')
+        )) {
+          return {
+            success: false,
+            error: `Erro de autenticação. Verifique se a chave API '${this.apiKey.substring(0, 5)}...' está correta.`,
+            albums: []
+          };
+        }
+        
         return {
           success: false,
           error: response.error || 'Erro ao buscar álbuns do usuário',
@@ -79,6 +106,25 @@ export class PixeldrainService {
         return {
           success: false,
           error: 'A API do Pixeldrain retornou HTML em vez de JSON. Possível problema com a autenticação ou a URL.',
+          albums: []
+        };
+      }
+      
+      // Se a resposta não tem álbuns, mas não tem erro explícito, pode ser que seja um array vazio
+      if (!response.albums && !response.error) {
+        // Se a resposta é um array, assumimos que são os álbuns
+        if (Array.isArray(response)) {
+          console.log('Resposta é um array, convertendo para formato esperado');
+          return {
+            success: true,
+            albums: response
+          };
+        }
+        
+        // Se não foi detectado como erro, mas não temos álbuns, retornar array vazio
+        console.log('Resposta não contém álbuns nem erros, retornando array vazio');
+        return {
+          success: true,
           albums: []
         };
       }
@@ -143,6 +189,16 @@ export class PixeldrainService {
         };
       }
 
+      // Verificar se a API key tem o formato correto de UUID
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(this.apiKey)) {
+        console.error('Formato da API key é inválido. Deve ser um UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+        return {
+          success: false,
+          error: 'Formato da API key é inválido. Verifique se a chave está correta.'
+        };
+      }
+
       // Remover o trailing slash do endpoint se existir
       const path = endpoint.startsWith('/') 
         ? endpoint 
@@ -177,7 +233,7 @@ export class PixeldrainService {
       const fetchOptions: RequestInit = {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json', // Solicitar explicitamente JSON
           ...options.headers
         },
       };
@@ -191,9 +247,22 @@ export class PixeldrainService {
         data = await response.json();
       } catch (error) {
         console.error('[Proxy] Erro ao processar resposta JSON do proxy:', error);
+        
+        // Se a resposta não é JSON, pode ser uma página HTML ou outro formato
+        const textResponse = await response.text();
+        if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html')) {
+          console.error('[Proxy] Resposta contém HTML:', textResponse.substring(0, 500));
+          return {
+            success: false,
+            error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
+            text: textResponse.substring(0, 1000)
+          };
+        }
+        
         return {
           success: false,
-          error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.'
+          error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.',
+          text: textResponse.substring(0, 500)
         };
       }
       
