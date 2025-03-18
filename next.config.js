@@ -25,11 +25,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Configuração para evitar erros de renderização estática
+  // Desabilitar server actions para build estático
   experimental: {
-    serverActions: {
-      allowedOrigins: ['*'],
-    },
+    serverActions: false,
   },
 };
 
