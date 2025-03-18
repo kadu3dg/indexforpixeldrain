@@ -25,225 +25,58 @@ export class PixeldrainService {
     this.apiKey = apiKey || 'a79a8e71-2813-4295-8617-bf9a23830060';
   }
 
-  // Versão para buscar arquivos reais do Pixeldrain
+  // Método para obter os arquivos do usuário
   async getFiles() {
     try {
-      // Usar a API real do Pixeldrain para buscar os arquivos
+      // Usar a API real do Pixeldrain
       const response = await this.fetchWithAuth('/user/files');
       console.log('Resposta da API de arquivos:', response);
       
-      // Se a API retornar erro, vamos mostrar dados de exemplo
-      if (!response || response.success === false) {
-        console.log('Usando dados de exemplo para arquivos');
-        return {
-          success: true,
-          files: [
-            {
-              id: 'arquivo-exemplo-1',
-              name: 'Exemplo 1.jpg',
-              size: 1024 * 1024 * 2,
-              views: 15,
-              date_upload: new Date().toISOString(),
-              date_last_view: new Date().toISOString(),
-              mime_type: 'image/jpeg'
-            },
-            {
-              id: 'arquivo-exemplo-2',
-              name: 'Exemplo 2.mp4',
-              size: 1024 * 1024 * 15,
-              views: 8,
-              date_upload: new Date().toISOString(),
-              date_last_view: new Date().toISOString(),
-              mime_type: 'video/mp4'
-            },
-            {
-              id: 'arquivo-exemplo-3',
-              name: 'Exemplo 3.pdf',
-              size: 1024 * 512,
-              views: 3,
-              date_upload: new Date().toISOString(),
-              date_last_view: new Date().toISOString(),
-              mime_type: 'application/pdf'
-            }
-          ]
-        };
-      }
-      
       return response;
     } catch (error) {
-      console.error('Erro ao buscar arquivos:', error);
-      // Em caso de erro, retornar dados de exemplo
+      console.error('Erro crítico ao buscar arquivos:', error);
       return {
-        success: true,
-        files: [
-          {
-            id: 'arquivo-exemplo-1',
-            name: 'Exemplo 1.jpg',
-            size: 1024 * 1024 * 2,
-            views: 15,
-            date_upload: new Date().toISOString(),
-            date_last_view: new Date().toISOString(),
-            mime_type: 'image/jpeg'
-          },
-          {
-            id: 'arquivo-exemplo-2',
-            name: 'Exemplo 2.mp4',
-            size: 1024 * 1024 * 15,
-            views: 8,
-            date_upload: new Date().toISOString(),
-            date_last_view: new Date().toISOString(),
-            mime_type: 'video/mp4'
-          },
-          {
-            id: 'arquivo-exemplo-3',
-            name: 'Exemplo 3.pdf',
-            size: 1024 * 512,
-            views: 3,
-            date_upload: new Date().toISOString(),
-            date_last_view: new Date().toISOString(),
-            mime_type: 'application/pdf'
-          }
-        ]
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        files: []
       };
     }
   }
 
-  // Versão estática simplificada para o GitHub Pages
+  // Método para obter os álbuns do usuário
   async getAlbums() {
     try {
-      // Usar a API real do Pixeldrain em vez de dados estáticos
+      console.log('Tentando buscar álbuns com a chave API:', this.apiKey);
+      
+      // Usar a API real do Pixeldrain
       const response = await this.fetchWithAuth('/user/albums');
       console.log('Resposta da API de álbuns:', response);
       
-      // Se a API retornar erro, vamos mostrar dados de exemplo
-      if (!response || response.success === false) {
-        console.log('Usando dados de exemplo para álbuns');
-        return {
-          success: true,
-          albums: [
-            {
-              id: 'exemplo-album-1',
-              title: 'Álbum de Demonstração 1',
-              description: 'Este é um álbum de demonstração criado pelo Pixeldrain Album Manager',
-              date_created: new Date().toISOString(),
-              file_count: 3
-            },
-            {
-              id: 'exemplo-album-2',
-              title: 'Álbum de Demonstração 2',
-              description: 'Outro álbum de exemplo para mostrar a funcionalidade',
-              date_created: new Date().toISOString(),
-              file_count: 5
-            }
-          ]
-        };
-      }
-      
       return response;
     } catch (error) {
-      console.error('Erro ao buscar álbuns:', error);
-      // Em caso de erro, retornar dados de exemplo
+      console.error('Erro crítico ao buscar álbuns:', error);
       return {
-        success: true,
-        albums: [
-          {
-            id: 'exemplo-album-1',
-            title: 'Álbum de Demonstração 1',
-            description: 'Este é um álbum de demonstração criado pelo Pixeldrain Album Manager',
-            date_created: new Date().toISOString(),
-            file_count: 3
-          },
-          {
-            id: 'exemplo-album-2',
-            title: 'Álbum de Demonstração 2',
-            description: 'Outro álbum de exemplo para mostrar a funcionalidade',
-            date_created: new Date().toISOString(),
-            file_count: 5
-          }
-        ]
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        albums: []
       };
     }
   }
 
-  // Versão estática simplificada para o GitHub Pages
+  // Método para obter os arquivos de um álbum específico
   async getAlbumFiles(albumId: string) {
     try {
-      // Usar a API real do Pixeldrain para buscar os arquivos do álbum
+      // Usar a API real do Pixeldrain
       const response = await this.fetchWithAuth(`/album/${albumId}`);
       console.log(`Resposta da API para o álbum ${albumId}:`, response);
       
-      // Se a API retornar erro, vamos mostrar dados de exemplo
-      if (!response || response.success === false) {
-        console.log('Usando dados de exemplo para arquivos do álbum');
-        return {
-          success: true,
-          files: [
-            {
-              id: 'arquivo-exemplo-1',
-              name: 'Exemplo 1.jpg',
-              size: 1024 * 1024 * 2,
-              views: 15,
-              date_upload: new Date().toISOString(),
-              date_last_view: new Date().toISOString(),
-              mime_type: 'image/jpeg'
-            },
-            {
-              id: 'arquivo-exemplo-2',
-              name: 'Exemplo 2.mp4',
-              size: 1024 * 1024 * 15,
-              views: 8,
-              date_upload: new Date().toISOString(),
-              date_last_view: new Date().toISOString(),
-              mime_type: 'video/mp4'
-            },
-            {
-              id: 'arquivo-exemplo-3',
-              name: 'Exemplo 3.pdf',
-              size: 1024 * 512,
-              views: 3,
-              date_upload: new Date().toISOString(),
-              date_last_view: new Date().toISOString(),
-              mime_type: 'application/pdf'
-            }
-          ]
-        };
-      }
-      
       return response;
     } catch (error) {
-      console.error(`Erro ao buscar arquivos do álbum ${albumId}:`, error);
-      // Em caso de erro, retornar dados de exemplo
+      console.error(`Erro crítico ao buscar arquivos do álbum ${albumId}:`, error);
       return {
-        success: true,
-        files: [
-          {
-            id: 'arquivo-exemplo-1',
-            name: 'Exemplo 1.jpg',
-            size: 1024 * 1024 * 2,
-            views: 15,
-            date_upload: new Date().toISOString(),
-            date_last_view: new Date().toISOString(),
-            mime_type: 'image/jpeg'
-          },
-          {
-            id: 'arquivo-exemplo-2',
-            name: 'Exemplo 2.mp4',
-            size: 1024 * 1024 * 15,
-            views: 8,
-            date_upload: new Date().toISOString(),
-            date_last_view: new Date().toISOString(),
-            mime_type: 'video/mp4'
-          },
-          {
-            id: 'arquivo-exemplo-3',
-            name: 'Exemplo 3.pdf',
-            size: 1024 * 512,
-            views: 3,
-            date_upload: new Date().toISOString(),
-            date_last_view: new Date().toISOString(),
-            mime_type: 'application/pdf'
-          }
-        ]
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        files: []
       };
     }
   }
@@ -254,49 +87,70 @@ export class PixeldrainService {
       headers.set('Content-Type', 'application/json');
       
       if (this.apiKey) {
-        headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
+        // Usar Basic Auth com a chave API do Pixeldrain
+        const authString = `:${this.apiKey}`;
+        const base64Auth = typeof btoa === 'function' 
+          ? btoa(authString) 
+          : Buffer.from(authString).toString('base64');
+        
+        headers.set('Authorization', `Basic ${base64Auth}`);
       }
 
-      // Usar diretamente a API do Pixeldrain em vez das rotas internas
+      // Remover o trailing slash do baseUrl se existir
+      const baseUrl = this.baseUrl.endsWith('/') 
+        ? this.baseUrl.slice(0, -1) 
+        : this.baseUrl;
+      
+      // Adicionar o leading slash do endpoint se não existir
+      const path = endpoint.startsWith('/') 
+        ? endpoint 
+        : `/${endpoint}`;
+      
+      // Construir a URL completa
       const url = endpoint.startsWith('http') 
         ? endpoint 
-        : `${this.baseUrl}${endpoint}`;
+        : `${baseUrl}${path}`;
       
       console.log(`Fazendo requisição para: ${url}`);
       
+      const fetchOptions: RequestInit = {
+        ...options,
+        headers,
+        // Modo no-cors pode causar problemas, usar cors ou same-origin
+        mode: 'cors',
+        // Remover credentials que pode causar problemas de CORS
+        credentials: 'omit'
+      };
+
+      const response = await fetch(url, fetchOptions);
+
+      // Tenta obter o corpo da resposta como JSON
+      let responseData;
       try {
-        const response = await fetch(url, {
-          ...options,
-          headers,
-          credentials: 'include'
-        });
-
-        // Tenta obter o corpo da resposta como JSON
-        let responseData;
-        try {
-          responseData = await response.json();
-        } catch (e) {
-          console.error('Erro ao processar JSON:', e);
-          responseData = { message: 'Não foi possível ler a resposta' };
-        }
-
-        if (!response.ok) {
-          console.error(`Erro na requisição: ${response.status} - ${response.statusText}`);
-          console.error('Detalhes da resposta:', responseData);
-          throw new Error(`Erro na API: ${response.status} - ${responseData.error || responseData.message || response.statusText}`);
-        }
-
-        return responseData;
-      } catch (fetchError) {
-        console.error('Erro na requisição fetch:', fetchError);
-        if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
-          throw new Error('Falha na conexão com o servidor. Verifique sua conexão com a internet.');
-        }
-        throw fetchError;
+        responseData = await response.json();
+      } catch (e) {
+        console.error('Erro ao processar JSON:', e);
+        responseData = { success: false, message: 'Não foi possível ler a resposta' };
       }
+
+      if (!response.ok) {
+        console.error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+        console.error('Detalhes da resposta:', responseData);
+        // Retornar o erro em vez de lançar, para permitir tratamento adequado
+        return {
+          success: false,
+          error: `Erro na API: ${response.status} - ${responseData.error || responseData.message || response.statusText}`
+        };
+      }
+
+      return responseData;
     } catch (error) {
       console.error('Erro na requisição:', error);
-      throw error;
+      // Retornar um objeto de erro em vez de lançar exceção
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido na requisição'
+      };
     }
   }
 
