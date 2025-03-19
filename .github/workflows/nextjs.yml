@@ -1,4 +1,4 @@
-name: Deploy Next.js site to GitHub Pages
+name: Deploy Next.js Site
 
 on:
   # Executa na push para a branch principal
@@ -22,53 +22,31 @@ jobs:
   # Job de build
   build:
     runs-on: ubuntu-latest
-    env:
-      NEXT_PUBLIC_BASE_PATH: /indexforpixeldrain
-      NEXT_PUBLIC_API_URL: https://pixeldrain.com/api
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: 'npm'
+          node-version: "20"
+          cache: npm
       - name: Setup Pages
         uses: actions/configure-pages@v4
-        with:
-          # Gera saída estática em vez de resposta do servidor
-          static_site_generator: next
-          # Habilitar GitHub Pages se não estiver habilitado
-          enablement: true
-      - name: List directory structure
-        run: |
-          find . -type d | sort
       - name: Restore cache
         uses: actions/cache@v4
         with:
           path: |
             .next/cache
           # Gere uma nova chave de cache quando o lockfile muda
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
       - name: Install dependencies
-        run: |
-          npm ci
-      - name: Verify setup
-        run: |
-          node -v
-          npm -v
-          cat next.config.js
-          echo "Variáveis de ambiente configuradas:"
-          echo "NEXT_PUBLIC_BASE_PATH: $NEXT_PUBLIC_BASE_PATH"
-          echo "NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
+        run: npm ci
       - name: Build with Next.js
-        run: |
-          # Executar o build com verbosidade máxima
-          npm run build
-          mkdir -p out
-          touch out/.nojekyll
+        run: npx next build
+      - name: Export static files
+        run: npx next export
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
