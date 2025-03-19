@@ -3,10 +3,14 @@ export interface PixeldrainFile {
   name: string;
   size: number;
   views: number;
-  date_upload: string;
-  date_last_view: string;
+  date_upload?: string;
+  date_created?: string;
+  date_last_view?: string;
   mime_type: string;
   description?: string;
+  thumbnail_href?: string;
+  bandwidth_used?: number;
+  detail_href?: string;
 }
 
 export interface PixeldrainListItem {
@@ -17,42 +21,49 @@ export interface PixeldrainListItem {
 export interface PixeldrainAlbum {
   id: string;
   title: string;
-  description: string;
-  date_created: string;
+  description?: string;
+  date_created?: string;
   file_count?: number;
-  files?: PixeldrainListItem[];
-  count?: number; // Campo adicional retornado pela API
+  files?: PixeldrainFile[];
+  count?: number;
 }
 
 export class PixeldrainService {
-  // Chave API do Pixeldrain
   private apiKey: string;
   private baseUrl: string = 'https://pixeldrain.com/api';
-  private useProxy: boolean = true; // Usar o proxy para evitar problemas de CORS
 
   constructor(apiKey?: string) {
-    // Verificar se a apiKey foi fornecida, caso contrário usar a default
     if (apiKey && apiKey.trim().length > 0) {
       this.apiKey = apiKey.trim();
     } else {
-      // A chave default está definida aqui - usando uma key de teste
-      this.apiKey = 'aa73d120-100e-426e-93ba-c7e1569b0322';
+      this.apiKey = '';
     }
     
-    console.log('PixeldrainService inicializado com a chave: ' + 
-      this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
+    console.log('PixeldrainService inicializado' + (this.apiKey ? 
+      ' com a chave: ' + this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5) :
+      ' sem chave API (modo anônimo)'));
   }
 
-  // Método para obter os arquivos do usuário
-  async getFiles() {
+  /**
+   * Obtém a lista de arquivos do usuário autenticado
+   */
+  async getUserFiles() {
     try {
-      // Endpoint correto para buscar arquivos do usuário
-      const response = await this.fetchWithAuth('/file');
-      console.log('Resposta da API de arquivos:', response);
+      if (!this.apiKey) {
+        console.error('API key não fornecida. Impossível obter arquivos do usuário.');
+        return {
+          success: false,
+          error: 'API key não fornecida. Impossível obter arquivos do usuário.',
+          files: []
+        };
+      }
+
+      // Este é o endpoint correto mencionado na documentação
+      const response = await this.fetchWithAuth('/user/files');
+      console.log('Resposta da API ao obter arquivos do usuário:', response);
       
-      // Verificar se a resposta foi bem-sucedida
       if (response.success === false) {
-        console.error('Erro ao buscar arquivos:', response.error);
+        console.error('Erro ao buscar arquivos do usuário:', response.error);
         return {
           success: false,
           error: response.error || 'Erro ao buscar arquivos do usuário',
@@ -60,9 +71,12 @@ export class PixeldrainService {
         };
       }
       
-      return response;
+      return {
+        success: true,
+        files: Array.isArray(response) ? response : []
+      };
     } catch (error) {
-      console.error('Erro crítico ao buscar arquivos:', error);
+      console.error('Erro crítico ao buscar arquivos do usuário:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -71,83 +85,39 @@ export class PixeldrainService {
     }
   }
 
-  // Método para obter os álbuns do usuário
-  async getAlbums() {
+  /**
+   * Obtém as listas (álbuns) do usuário autenticado
+   */
+  async getUserLists() {
     try {
-      console.log('Tentando buscar álbuns com a chave API:', 
-        this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
+      if (!this.apiKey) {
+        console.error('API key não fornecida. Impossível obter listas do usuário.');
+        return {
+          success: false,
+          error: 'API key não fornecida. Impossível obter listas do usuário.',
+          albums: []
+        };
+      }
+
+      // Este é o endpoint correto mencionado na documentação
+      const response = await this.fetchWithAuth('/user/lists');
+      console.log('Resposta da API ao obter listas do usuário:', response);
       
-      // Endpoint correto de acordo com a documentação da API
-      const response = await this.fetchWithAuth('/list');
-      console.log('Resposta da API de álbuns:', response);
-      
-      // Verificar se a resposta contém erro
       if (response.success === false) {
-        console.error('Erro ao buscar álbuns:', response.error);
-        
-        // Verificar se o erro é de autenticação
-        if (response.error && (
-          response.error.includes('401') || 
-          response.error.includes('autenticação') || 
-          response.error.includes('authentication')
-        )) {
-          return {
-            success: false,
-            error: `Erro de autenticação. Verifique se a chave API '${this.apiKey.substring(0, 5)}...' está correta.`,
-            albums: []
-          };
-        }
-        
+        console.error('Erro ao buscar listas do usuário:', response.error);
         return {
           success: false,
-          error: response.error || 'Erro ao buscar álbuns do usuário',
+          error: response.error || 'Erro ao buscar listas do usuário',
           albums: []
         };
       }
       
-      // Verificar se a resposta contém uma mensagem HTML (indica erro na API)
-      if (response.text && response.text.includes('<!DOCTYPE')) {
-        console.error('A API retornou HTML em vez de JSON:', response.text.substring(0, 100));
-        return {
-          success: false,
-          error: 'A API do Pixeldrain retornou HTML em vez de JSON. Possível problema com a autenticação ou a URL.',
-          albums: []
-        };
-      }
-      
-      // Verificar diferentes formatos de resposta que a API pode retornar
-      if (Array.isArray(response)) {
-        console.log('API retornou um array de álbuns diretamente:', response);
-        return {
-          success: true,
-          albums: response
-        };
-      }
-      
-      if (response.lists) {
-        console.log('API retornou álbuns no campo "lists":', response.lists);
-        return {
-          success: true,
-          albums: response.lists
-        };
-      }
-      
-      if (response.albums) {
-        console.log('API retornou álbuns no campo "albums":', response.albums);
-        return {
-          success: true,
-          albums: response.albums
-        };
-      }
-      
-      console.log('API retornou formato desconhecido, retornando objeto original:', response);
       return {
         success: true,
-        albums: [],
-        response: response // Incluir resposta original para diagnóstico
+        albums: Array.isArray(response) ? response : []
       };
     } catch (error) {
-      console.error('Erro crítico ao buscar álbuns:', error);
+      console.error('Erro crítico ao buscar listas do usuário:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -156,38 +126,388 @@ export class PixeldrainService {
     }
   }
 
+  /**
+   * Obtém informações detalhadas de um arquivo específico
+   */
+  async getFileInfo(fileId: string) {
+    try {
+      if (!fileId) {
+        console.error('ID do arquivo não fornecido');
+        return {
+          success: false,
+          error: 'ID do arquivo não fornecido'
+        };
+      }
+
+      const response = await this.fetchWithAuth(`/file/${fileId}/info`);
+      console.log(`Resposta da API ao obter informações do arquivo ${fileId}:`, response);
+      
+      if (response.success === false) {
+        console.error(`Erro ao buscar informações do arquivo ${fileId}:`, response.error);
+        return {
+          success: false,
+          error: response.error || `Erro ao buscar informações do arquivo ${fileId}`
+        };
+      }
+      
+      return {
+        success: true,
+        file: response
+      };
+    } catch (error) {
+      console.error(`Erro crítico ao buscar informações do arquivo ${fileId}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      };
+    }
+  }
+
+  /**
+   * Obtém detalhes de uma lista (álbum) específica
+   */
+  async getListDetails(listId: string) {
+    try {
+      if (!listId) {
+        console.error('ID da lista não fornecido');
+        return {
+          success: false,
+          error: 'ID da lista não fornecido',
+          album: null
+        };
+      }
+
+      const response = await this.fetchWithAuth(`/list/${listId}`);
+      console.log(`Resposta da API ao obter detalhes da lista ${listId}:`, response);
+      
+      if (response.success === false) {
+        console.error(`Erro ao buscar detalhes da lista ${listId}:`, response.error);
+        return {
+          success: false,
+          error: response.error || `Erro ao buscar detalhes da lista ${listId}`,
+          album: null
+        };
+      }
+      
+      return {
+        success: true,
+        album: response
+      };
+    } catch (error) {
+      console.error(`Erro crítico ao buscar detalhes da lista ${listId}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        album: null
+      };
+    }
+  }
+
+  /**
+   * Cria uma nova lista (álbum)
+   */
+  async createList(title: string, description: string = '', files: PixeldrainListItem[] = []) {
+    try {
+      if (!this.apiKey) {
+        console.error('API key não fornecida. Impossível criar lista.');
+        return {
+          success: false,
+          error: 'API key não fornecida. Impossível criar lista.',
+          listId: null
+        };
+      }
+
+      if (!title) {
+        console.error('Título da lista não fornecido');
+        return {
+          success: false,
+          error: 'Título da lista não fornecido',
+          listId: null
+        };
+      }
+
+      const data = {
+        title,
+        description,
+        anonymous: false,
+        files
+      };
+
+      const response = await this.fetchWithAuth('/list', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      
+      console.log('Resposta da API ao criar lista:', response);
+      
+      if (response.success === false) {
+        console.error('Erro ao criar lista:', response.error || response.message);
+        return {
+          success: false,
+          error: response.error || response.message || 'Erro desconhecido ao criar lista',
+          listId: null
+        };
+      }
+      
+      return {
+        success: true,
+        listId: response.id
+      };
+    } catch (error) {
+      console.error('Erro crítico ao criar lista:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        listId: null
+      };
+    }
+  }
+
+  /**
+   * Adiciona um arquivo a uma lista (álbum)
+   */
+  async addFileToList(listId: string, fileId: string, description: string = '') {
+    try {
+      if (!this.apiKey) {
+        console.error('API key não fornecida. Impossível adicionar arquivo à lista.');
+        return {
+          success: false,
+          error: 'API key não fornecida. Impossível adicionar arquivo à lista.'
+        };
+      }
+
+      if (!listId) {
+        console.error('ID da lista não fornecido');
+        return {
+          success: false,
+          error: 'ID da lista não fornecido'
+        };
+      }
+
+      if (!fileId) {
+        console.error('ID do arquivo não fornecido');
+        return {
+          success: false,
+          error: 'ID do arquivo não fornecido'
+        };
+      }
+
+      // Primeiro, obtemos os detalhes da lista
+      const listDetails = await this.getListDetails(listId);
+      if (!listDetails.success) {
+        return {
+          success: false,
+          error: `Erro ao obter detalhes da lista: ${listDetails.error}`
+        };
+      }
+
+      // Verificamos se o arquivo já está na lista
+      const list = listDetails.album;
+      const files = list.files || [];
+      const fileExists = files.some((file: PixeldrainFile) => file.id === fileId);
+      
+      if (fileExists) {
+        console.log(`Arquivo ${fileId} já existe na lista ${listId}`);
+        return {
+          success: true,
+          message: `Arquivo já existe na lista`
+        };
+      }
+
+      // Adicionamos o arquivo à lista de arquivos
+      files.push({
+        id: fileId,
+        description
+      });
+
+      // Atualizamos a lista com a nova lista de arquivos
+      const response = await this.fetchWithAuth(`/list/${listId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: list.title,
+          description: list.description,
+          files
+        })
+      });
+
+      console.log(`Resposta da API ao adicionar arquivo ${fileId} à lista ${listId}:`, response);
+      
+      if (response.success === false) {
+        console.error(`Erro ao adicionar arquivo ${fileId} à lista ${listId}:`, response.error);
+        return {
+          success: false,
+          error: response.error || `Erro ao adicionar arquivo à lista`
+        };
+      }
+      
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error(`Erro crítico ao adicionar arquivo ${fileId} à lista ${listId}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      };
+    }
+  }
+
+  /**
+   * Remove um arquivo de uma lista (álbum)
+   */
+  async removeFileFromList(listId: string, fileId: string) {
+    try {
+      if (!this.apiKey) {
+        console.error('API key não fornecida. Impossível remover arquivo da lista.');
+        return {
+          success: false,
+          error: 'API key não fornecida. Impossível remover arquivo da lista.'
+        };
+      }
+
+      if (!listId) {
+        console.error('ID da lista não fornecido');
+        return {
+          success: false,
+          error: 'ID da lista não fornecido'
+        };
+      }
+
+      if (!fileId) {
+        console.error('ID do arquivo não fornecido');
+        return {
+          success: false,
+          error: 'ID do arquivo não fornecido'
+        };
+      }
+
+      // Primeiro, obtemos os detalhes da lista
+      const listDetails = await this.getListDetails(listId);
+      if (!listDetails.success) {
+        return {
+          success: false,
+          error: `Erro ao obter detalhes da lista: ${listDetails.error}`
+        };
+      }
+
+      // Removemos o arquivo da lista de arquivos
+      const list = listDetails.album;
+      const files = (list.files || []).filter((file: PixeldrainFile) => file.id !== fileId);
+
+      // Atualizamos a lista com a nova lista de arquivos
+      const response = await this.fetchWithAuth(`/list/${listId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: list.title,
+          description: list.description,
+          files
+        })
+      });
+
+      console.log(`Resposta da API ao remover arquivo ${fileId} da lista ${listId}:`, response);
+      
+      if (response.success === false) {
+        console.error(`Erro ao remover arquivo ${fileId} da lista ${listId}:`, response.error);
+        return {
+          success: false,
+          error: response.error || `Erro ao remover arquivo da lista`
+        };
+      }
+      
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error(`Erro crítico ao remover arquivo ${fileId} da lista ${listId}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      };
+    }
+  }
+
+  /**
+   * Exclui um arquivo
+   */
+  async deleteFile(fileId: string) {
+    try {
+      if (!this.apiKey) {
+        console.error('API key não fornecida. Impossível excluir arquivo.');
+        return {
+          success: false,
+          error: 'API key não fornecida. Impossível excluir arquivo.'
+        };
+      }
+
+      if (!fileId) {
+        console.error('ID do arquivo não fornecido');
+        return {
+          success: false,
+          error: 'ID do arquivo não fornecido'
+        };
+      }
+
+      const response = await this.fetchWithAuth(`/file/${fileId}`, {
+        method: 'DELETE'
+      });
+
+      console.log(`Resposta da API ao excluir arquivo ${fileId}:`, response);
+      
+      if (response.success === false) {
+        console.error(`Erro ao excluir arquivo ${fileId}:`, response.error);
+        return {
+          success: false,
+          error: response.error || `Erro ao excluir arquivo`
+        };
+      }
+      
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error(`Erro crítico ao excluir arquivo ${fileId}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      };
+    }
+  }
+
+  /**
+   * Obtém a URL para download direto de um arquivo
+   */
+  getFileUrl(fileId: string, download: boolean = false): string {
+    if (!fileId) return '';
+    
+    const url = `${this.baseUrl}/file/${fileId}`;
+    return download ? `${url}?download` : url;
+  }
+
+  /**
+   * Obtém a URL para thumbnail de um arquivo
+   */
+  getThumbnailUrl(fileId: string, width: number = 128, height: number = 128): string {
+    if (!fileId) return '';
+    
+    // Width e height precisam ser múltiplos de 16, máximo 128
+    width = Math.min(128, Math.round(width / 16) * 16);
+    height = Math.min(128, Math.round(height / 16) * 16);
+    
+    return `${this.baseUrl}/file/${fileId}/thumbnail?width=${width}&height=${height}`;
+  }
+
+  /**
+   * Método auxiliar para fazer requisições autenticadas
+   */
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     try {
-      // Verificar se a API key está definida e não vazia
-      if (!this.apiKey || !this.apiKey.trim()) {
-        console.error('API key está vazia');
-        return {
-          success: false,
-          error: 'API key não fornecida'
-        };
-      }
-
-      // Verificar se a API key tem o formato correto de UUID
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidPattern.test(this.apiKey)) {
-        console.error('Formato da API key é inválido. Deve ser um UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
-        return {
-          success: false,
-          error: 'Formato da API key é inválido. Verifique se a chave está correta.'
-        };
-      }
-
-      // Remover o trailing slash do endpoint se existir
-      const path = endpoint.startsWith('/') 
-        ? endpoint 
-        : `/${endpoint}`;
-
-      // Sempre usar o proxy para evitar problemas de CORS
-      console.log(`[Auth] Usando proxy para requisição com Basic Auth à API do Pixeldrain: ${path}`);
+      // Prepara o caminho do endpoint
+      const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      
+      // Use o proxy para fazer a requisição
       return this.fetchWithProxy(path, options);
     } catch (error) {
-      console.error('Erro na requisição:', error);
-      // Retornar um objeto de erro em vez de lançar exceção
+      console.error('Erro na requisição autenticada:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido na requisição'
@@ -195,7 +515,9 @@ export class PixeldrainService {
     }
   }
 
-  // Método para fazer requisições através do proxy interno
+  /**
+   * Método para fazer requisições através do proxy interno
+   */
   private async fetchWithProxy(path: string, options: RequestInit = {}) {
     try {
       // Construir a URL para o proxy
@@ -203,15 +525,18 @@ export class PixeldrainService {
       
       // Adicionar o caminho da API e a apiKey como parâmetros de consulta
       proxyUrl.searchParams.append('path', path);
-      proxyUrl.searchParams.append('apiKey', this.apiKey);
+      if (this.apiKey) {
+        proxyUrl.searchParams.append('apiKey', this.apiKey);
+      }
       
       console.log(`[Proxy] Fazendo requisição para: ${proxyUrl.toString()}`);
       
-      // Configurar as opções da requisição com cabeçalhos corretos
+      // Configurar as opções da requisição
       const fetchOptions: RequestInit = {
         ...options,
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           ...options.headers
         },
       };
@@ -221,191 +546,102 @@ export class PixeldrainService {
       
       // Verificar status da resposta
       if (!response.ok) {
-        const statusText = response.statusText || `Erro ${response.status}`;
-        console.error(`[Proxy] Resposta com erro: ${response.status} - ${statusText}`);
+        console.error(`[Proxy] Resposta com erro: ${response.status} - ${response.statusText || 'Sem mensagem'}`);
       } else {
         console.log(`[Proxy] Resposta bem-sucedida: ${response.status}`);
       }
       
-      // Processar a resposta
-      let data;
+      // Clonar a resposta para evitar "body already read"
+      const clonedResponse = response.clone();
+      
       try {
-        // Clone a resposta antes de tentar ler como JSON
-        const clonedResponse = response.clone();
+        // Tentar processar a resposta como JSON
+        const data = await response.json();
+        return data;
+      } catch (jsonError) {
+        console.error('[Proxy] Erro ao processar resposta como JSON:', jsonError);
+        
+        // Se falhar, tente ler como texto
+        const textResponse = await clonedResponse.text();
+        
+        if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html')) {
+          console.error('[Proxy] Resposta contém HTML:', textResponse.substring(0, 500));
+          return {
+            success: false,
+            error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
+            text: textResponse.substring(0, 1000)
+          };
+        }
         
         try {
-          // Tentar ler a resposta como JSON primeiro
-          data = await response.json();
-        } catch (jsonError) {
-          console.error('[Proxy] Erro ao processar resposta como JSON:', jsonError);
-          
-          // Se falhar, tente ler como texto usando a resposta clonada
-          const textResponse = await clonedResponse.text();
-          
-          if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html')) {
-            console.error('[Proxy] Resposta contém HTML:', textResponse.substring(0, 500));
-            return {
-              success: false,
-              error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
-              text: textResponse.substring(0, 1000)
-            };
-          }
-          
           // Tentar converter o texto para JSON manualmente
-          try {
-            if (textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) {
-              data = JSON.parse(textResponse);
-              console.log('[Proxy] Convertido texto para JSON manualmente');
-            } else {
-              return {
-                success: false,
-                error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.',
-                text: textResponse.substring(0, 500)
-              };
-            }
-          } catch (parseError) {
-            console.error('[Proxy] Erro ao converter texto para JSON:', parseError);
-            return {
-              success: false,
-              error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.',
-              text: textResponse.substring(0, 500)
-            };
+          if (textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) {
+            return JSON.parse(textResponse);
           }
+        } catch (parseError) {
+          // Se falhar na conversão manual, retornar erro
+          console.error('[Proxy] Erro ao converter texto para JSON:', parseError);
         }
-      } catch (error) {
-        console.error('[Proxy] Erro crítico ao processar resposta do proxy:', error);
+        
         return {
           success: false,
-          error: `Erro ao usar proxy: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+          error: 'Erro ao processar resposta. A resposta não está em formato JSON válido.',
+          text: textResponse.substring(0, 500)
         };
       }
-      
-      // Verificar se houve erro na requisição que não resultou em status HTTP de erro
-      if (data && data.success === false) {
-        console.error(`[Proxy] Erro na resposta da API:`, data.error || 'Erro desconhecido');
-        return data;
-      }
-      
-      return data;
     } catch (error) {
-      console.error('[Proxy] Erro ao usar proxy:', error);
+      console.error('[Proxy] Erro ao fazer requisição:', error);
       return {
         success: false,
         error: error instanceof Error 
-          ? `Erro ao usar proxy: ${error.message}` 
-          : 'Erro desconhecido ao usar proxy'
+          ? `Erro ao fazer requisição: ${error.message}` 
+          : 'Erro desconhecido ao fazer requisição'
       };
     }
   }
 
-  async listFiles(): Promise<{ files: PixeldrainFile[]; albums: PixeldrainAlbum[] }> {
+  /**
+   * Método para carregar todos os arquivos e listas do usuário
+   */
+  async getAllUserContent() {
     try {
-      // Buscar arquivos e álbuns em chamadas separadas para garantir que obtemos os dados corretos
-      const filesResponse = await this.getFiles();
-      const albumsResponse = await this.getAlbums();
+      const [filesResult, listsResult] = await Promise.all([
+        this.getUserFiles(),
+        this.getUserLists()
+      ]);
       
-      console.log('Arquivos obtidos:', filesResponse);
-      console.log('Álbuns obtidos:', albumsResponse);
+      const files = filesResult.success ? filesResult.files : [];
+      const albums = listsResult.success ? listsResult.albums : [];
       
-      // Extrair os arquivos e álbuns das respostas
-      const files = filesResponse.files || [];
-      const albums = albumsResponse.albums || [];
-      
-      // Carregar os arquivos de cada álbum
-      const albumsWithFiles = await Promise.all(
-        albums.map(async (album: PixeldrainAlbum) => {
+      // Carregar os detalhes de cada lista para obter os arquivos de cada uma
+      const albumsWithDetails = await Promise.all(
+        albums.map(async (album) => {
           try {
-            const albumDetails = await this.getAlbum(album.id);
-            return {
-              ...album,
-              files: albumDetails.files || []
-            };
+            const details = await this.getListDetails(album.id);
+            if (details.success && details.album) {
+              return details.album;
+            }
+            return album;
           } catch (error) {
-            console.error(`Erro ao carregar arquivos do álbum ${album.id}:`, error);
+            console.error(`Erro ao carregar detalhes do álbum ${album.id}:`, error);
             return album;
           }
         })
       );
       
       return {
-        files: files,
-        albums: albumsWithFiles
+        success: true,
+        files,
+        albums: albumsWithDetails
       };
     } catch (error) {
-      console.error('Erro ao listar arquivos:', error);
-      throw error;
+      console.error('Erro ao carregar conteúdo do usuário:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        files: [],
+        albums: []
+      };
     }
-  }
-
-  async getAlbum(albumId: string): Promise<PixeldrainAlbum> {
-    try {
-      const response = await this.fetchWithAuth(`/list/${albumId}`);
-      return response;
-    } catch (error) {
-      console.error(`Erro ao obter álbum ${albumId}:`, error);
-      throw error;
-    }
-  }
-
-  getDownloadUrl(fileId: string): string {
-    return `https://pixeldrain.com/api/file/${fileId}`;
-  }
-
-  async deleteFile(fileId: string): Promise<void> {
-    await this.fetchWithAuth(`/file/${fileId}`, {
-      method: 'DELETE'
-    });
-  }
-
-  async createAlbum(title: string, description: string): Promise<PixeldrainAlbum> {
-    const data = await this.fetchWithAuth('/list', {
-      method: 'POST',
-      body: JSON.stringify({ title, description, files: [] })
-    });
-    return data;
-  }
-
-  async addFileToAlbum(fileId: string, albumId: string): Promise<void> {
-    // Para adicionar um arquivo a uma lista, é necessário obter a lista atual,
-    // adicionar o arquivo à lista de arquivos e atualizar a lista completa
-    const album = await this.getAlbum(albumId);
-    const fileList = album.files || [];
-    
-    // Verificar se o arquivo já está na lista
-    const fileExists = fileList.some(file => file.id === fileId);
-    if (fileExists) {
-      console.log(`Arquivo ${fileId} já existe no álbum ${albumId}`);
-      return;
-    }
-    
-    // Adicionar o arquivo à lista
-    fileList.push({ id: fileId, description: '' } as PixeldrainListItem);
-    
-    // Atualizar a lista
-    await this.fetchWithAuth(`/list/${albumId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        title: album.title,
-        description: album.description,
-        files: fileList
-      })
-    });
-  }
-
-  async removeFileFromAlbum(fileId: string, albumId: string): Promise<void> {
-    // Para remover um arquivo de uma lista, é necessário obter a lista atual,
-    // remover o arquivo da lista de arquivos e atualizar a lista completa
-    const album = await this.getAlbum(albumId);
-    const fileList = (album.files || []).filter(file => file.id !== fileId);
-    
-    // Atualizar a lista
-    await this.fetchWithAuth(`/list/${albumId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        title: album.title,
-        description: album.description,
-        files: fileList
-      })
-    });
   }
 } 
