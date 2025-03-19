@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { PixeldrainService, PixeldrainAlbum } from '../../services/pixeldrain';
 import AlbumViewer from '../../components/AlbumViewer';
-import { CircularProgress, Alert } from '@mui/material';
+import { CircularProgress, Alert, Button } from '@mui/material';
+import { useRouter } from 'next/navigation';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 interface AlbumPageClientProps {
   params: {
@@ -15,6 +17,7 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
   const [album, setAlbum] = useState<PixeldrainAlbum | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const pixeldrainService = new PixeldrainService();
 
@@ -34,6 +37,10 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
     loadAlbum();
   }, [params.id]);
 
+  const handleBack = () => {
+    router.push('/');
+  };
+
   // Se o ID do álbum não corresponder a nenhum dos IDs pré-gerados,
   // mostrar uma mensagem de erro amigável
   if (params.id === 'default-album') {
@@ -51,6 +58,31 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
   return (
     <main className="min-h-screen p-4" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
       <div className="max-w-6xl mx-auto">
+        <div className="mb-4 flex items-center">
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBack}
+            variant="contained"
+            sx={{
+              backgroundColor: '#333',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: '#444',
+              },
+            }}
+          >
+            Voltar
+          </Button>
+          {album && (
+            <div className="ml-4">
+              <h1 className="text-2xl font-bold">{album.title}</h1>
+              <p className="text-gray-400">
+                {album.files.length} arquivo{album.files.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+        </div>
+
         {error && (
           <Alert severity="error" sx={{ mb: 2, backgroundColor: '#ff000033', color: '#ffffff' }}>
             {error}
