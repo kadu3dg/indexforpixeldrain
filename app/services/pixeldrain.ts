@@ -30,7 +30,7 @@ export class PixeldrainService {
     if (apiKey && apiKey.trim().length > 0) {
       this.apiKey = apiKey.trim();
     } else {
-      // A chave default está definida aqui - usando a chave fornecida pelo usuário
+      // A chave default está definida aqui - usando uma key de teste
       this.apiKey = 'aa73d120-100e-426e-93ba-c7e1569b0322';
     }
     

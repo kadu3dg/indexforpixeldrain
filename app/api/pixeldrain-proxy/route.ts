@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     
     // Adicionar autenticação se a apiKey estiver presente
     if (apiKey && apiKey.trim()) {
-      const authHeader = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+      const authHeader = `Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`;
       headers.append('Authorization', authHeader);
       console.log(`[Proxy GET] Usando autenticação com a chave: ${apiKey.substring(0, 5)}...`);
     } else {
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     
     // Adicionar autenticação se a apiKey estiver presente
     if (apiKey && apiKey.trim()) {
-      const authHeader = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+      const authHeader = `Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`;
       headers.append('Authorization', authHeader);
       console.log(`[Proxy POST] Usando autenticação com a chave: ${apiKey.substring(0, 5)}...`);
     } else {
@@ -365,7 +365,7 @@ export async function PUT(request: NextRequest) {
     
     // Adicionar autenticação se a apiKey estiver presente
     if (apiKey && apiKey.trim()) {
-      const authHeader = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+      const authHeader = `Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`;
       headers.append('Authorization', authHeader);
       console.log(`[Proxy PUT] Usando autenticação com a chave: ${apiKey.substring(0, 5)}...`);
     } else {
@@ -523,7 +523,7 @@ export async function DELETE(request: NextRequest) {
     
     // Adicionar autenticação se a apiKey estiver presente
     if (apiKey && apiKey.trim()) {
-      const authHeader = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+      const authHeader = `Basic ${Buffer.from(`:${apiKey}`).toString('base64')}`;
       headers.append('Authorization', authHeader);
       console.log(`[Proxy DELETE] Usando autenticação com a chave: ${apiKey.substring(0, 5)}...`);
     } else {
