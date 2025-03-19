@@ -111,6 +111,15 @@ export class PixeldrainService {
         };
       }
       
+      // Verificar se a resposta contém a propriedade 'lists' que contém os álbuns
+      if (response.lists) {
+        console.log('Encontrado campo "lists" na resposta:', response.lists);
+        return {
+          success: true,
+          albums: response.lists
+        };
+      }
+      
       // Se a resposta não tem álbuns, mas não tem erro explícito, pode ser que seja um array vazio
       if (!response.albums && !response.error) {
         // Se a resposta é um array, assumimos que são os álbuns
@@ -325,12 +334,12 @@ export class PixeldrainService {
     try {
       // Usar as rotas de API internas do Next.js
       const filesResponse = await this.fetchWithAuth('/user/files');
-      const albumsResponse = await this.fetchWithAuth('/user/files');
       
       console.log('Resposta da API de arquivos:', filesResponse);
-      console.log('Resposta da API de álbuns:', albumsResponse);
       
-      const albums = albumsResponse.albums || [];
+      // Obter os arquivos e listas da resposta
+      const files = filesResponse.files || [];
+      const albums = filesResponse.lists || [];
       
       // Carregar os arquivos de cada álbum
       const albumsWithFiles = await Promise.all(
@@ -349,7 +358,7 @@ export class PixeldrainService {
       );
       
       return {
-        files: filesResponse.files || [],
+        files: files,
         albums: albumsWithFiles
       };
     } catch (error) {
