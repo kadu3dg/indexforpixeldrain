@@ -31,35 +31,18 @@ export class PixeldrainService {
   private apiKey: string;
   private baseUrl: string;
 
-  constructor(apiKey: string = '') {
+  constructor(apiKey: string = 'aa73d120-100e-426e-93ba-c7e1569b0322') {
     this.apiKey = apiKey;
-    this.baseUrl = process.env.NODE_ENV === 'development' 
-      ? '/api/pixeldrain'
-      : 'https://pixeldrain.com/api';
+    this.baseUrl = 'https://pixeldrain.com/api';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const url = new URL(
-      process.env.NODE_ENV === 'development'
-        ? this.baseUrl
-        : endpoint,
-      process.env.NODE_ENV === 'development'
-        ? window.location.origin
-        : this.baseUrl
-    );
-
-    if (process.env.NODE_ENV === 'development') {
-      url.searchParams.set('endpoint', endpoint);
-      url.searchParams.set('apiKey', this.apiKey);
-    }
-
+    const url = new URL(endpoint, this.baseUrl);
+    
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/json');
     headers.set('Content-Type', 'application/json');
-
-    if (process.env.NODE_ENV !== 'development') {
-      headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
-    }
+    headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
 
     const fetchOptions: RequestInit = {
       ...options,
