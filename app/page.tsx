@@ -37,7 +37,7 @@ export default function Home() {
       
       // Buscar os álbuns
       console.log('Buscando álbuns...');
-      const response = await pixeldrainService.getAlbums();
+      const response = await pixeldrainService.getUserLists();
       console.log('Resposta da API:', response);
       
       if (response.success === false) {
@@ -142,7 +142,11 @@ export default function Home() {
               </p>
               <div className={styles.albumMeta}>
                 <span>ID: {album.id}</span>
-                <span>Criado em: {new Date(album.date_created).toLocaleDateString()}</span>
+                {album.date_created && (
+                  <span>
+                    {new Date(album.date_created).toLocaleDateString()}
+                  </span>
+                )}
                 <span>Arquivos: {album.file_count || 0}</span>
               </div>
               <Link href={`/album/${album.id}`} className={styles.albumLink}>
