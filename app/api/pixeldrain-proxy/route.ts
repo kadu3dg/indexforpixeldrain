@@ -53,12 +53,12 @@ export async function GET(request: NextRequest) {
       headers,
     });
     
-    // Clonar a resposta antes de processar para evitar "body stream already read"
-    const clonedResponse = response.clone();
-    
     // Obter o tipo de conteúdo
     const contentType = response.headers.get('content-type') || '';
     console.log(`[Proxy GET] Status: ${response.status}, Content-Type: ${contentType}`);
+    
+    // Clonar a resposta para permitir múltiplas leituras
+    const clonedResponse = response.clone();
     
     // Verificar se a resposta é bem-sucedida
     if (!response.ok) {
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     // Fazer a requisição para a API do Pixeldrain
     const response = await fetch(apiUrl.toString(), fetchOptions);
     
-    // Clonar a resposta antes de processar para evitar "body stream already read"
+    // Clonar a resposta para permitir múltiplas leituras
     const clonedResponse = response.clone();
     
     // Obter o tipo de conteúdo
@@ -250,7 +250,6 @@ export async function POST(request: NextRequest) {
               { status: response.status }
             );
           } catch (jsonError) {
-            // Se falhar ao converter, retorna o texto original
             console.error('[Proxy POST] Erro ao processar JSON de erro:', jsonError);
           }
         }
@@ -389,7 +388,7 @@ export async function PUT(request: NextRequest) {
     // Fazer a requisição para a API do Pixeldrain
     const response = await fetch(apiUrl.toString(), fetchOptions);
     
-    // Clonar a resposta antes de processar para evitar "body stream already read"
+    // Clonar a resposta para permitir múltiplas leituras
     const clonedResponse = response.clone();
     
     // Obter o tipo de conteúdo
@@ -418,7 +417,6 @@ export async function PUT(request: NextRequest) {
               { status: response.status }
             );
           } catch (jsonError) {
-            // Se falhar ao converter, retorna o texto original
             console.error('[Proxy PUT] Erro ao processar JSON de erro:', jsonError);
           }
         }
@@ -539,7 +537,7 @@ export async function DELETE(request: NextRequest) {
       headers,
     });
     
-    // Clonar a resposta antes de processar para evitar "body stream already read"
+    // Clonar a resposta para permitir múltiplas leituras
     const clonedResponse = response.clone();
     
     // Obter o tipo de conteúdo
@@ -568,7 +566,6 @@ export async function DELETE(request: NextRequest) {
               { status: response.status }
             );
           } catch (jsonError) {
-            // Se falhar ao converter, retorna o texto original
             console.error('[Proxy DELETE] Erro ao processar JSON de erro:', jsonError);
           }
         }
