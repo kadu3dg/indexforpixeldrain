@@ -1,6 +1,7 @@
 import { PixeldrainService } from '../../services/pixeldrain';
 import AlbumPageClient from './AlbumPageClient';
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 // Esta função é necessária para o modo de exportação estática
 export async function generateStaticParams() {
@@ -86,5 +87,17 @@ export default async function AlbumPage({
     return <div>ID do álbum inválido</div>;
   }
 
-  return <AlbumPageClient params={{ id: albumId }} />;
+  // Adicionar tratamento de erro para álbuns não encontrados
+  try {
+    const pixeldrainService = new PixeldrainService();
+    const albumDetails = await pixeldrainService.getListDetails(albumId);
+    
+    // Log de depuração para verificar os detalhes do álbum
+    console.log('Detalhes do álbum carregados:', albumDetails);
+
+    return <AlbumPageClient params={{ id: albumId }} />;
+  } catch (error) {
+    console.error(`Erro ao carregar detalhes do álbum ${albumId}:`, error);
+    notFound();
+  }
 } 
