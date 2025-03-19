@@ -82,7 +82,13 @@ export class PixeldrainService {
   async getUserLists(): Promise<PixeldrainAlbum[]> {
     try {
       const data = await this.fetchWithAuth('/user/lists');
-      return data.lists || [];
+      const lists = data.lists || [];
+      
+      // Garantir que cada álbum tenha o file_count preenchido
+      return lists.map((list: PixeldrainAlbum) => ({
+        ...list,
+        file_count: list.file_count || list.files?.length || 0
+      }));
     } catch (error) {
       console.error('Erro ao buscar álbuns:', error);
       return [];

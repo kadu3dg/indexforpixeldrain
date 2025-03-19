@@ -95,7 +95,7 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                     Criado em: {formatDate(album.date_created)}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {album.files ? `${album.files.length} arquivos` : 'Carregando arquivos...'}
+                    Total de arquivos: {album.file_count || album.files?.length || 0}
                   </p>
                 </div>
                 <button
