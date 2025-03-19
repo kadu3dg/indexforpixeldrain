@@ -73,8 +73,8 @@ export class PixeldrainService {
       console.log('Tentando buscar álbuns com a chave API:', 
         this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
       
-      // IMPORTANTE: A rota correta para os álbuns do usuário é /user/lists
-      const response = await this.fetchWithAuth('/user/lists');
+      // A rota correta para buscar listas
+      const response = await this.fetchWithAuth('/user/files');
       console.log('Resposta da API de álbuns:', response);
       
       // Verificar se a resposta contém erro
@@ -325,7 +325,7 @@ export class PixeldrainService {
     try {
       // Usar as rotas de API internas do Next.js
       const filesResponse = await this.fetchWithAuth('/user/files');
-      const albumsResponse = await this.fetchWithAuth('/user/lists');
+      const albumsResponse = await this.fetchWithAuth('/user/files');
       
       console.log('Resposta da API de arquivos:', filesResponse);
       console.log('Resposta da API de álbuns:', albumsResponse);
