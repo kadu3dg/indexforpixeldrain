@@ -9,7 +9,6 @@ const nextConfig = {
   // Configurações de imagens
   images: {
     unoptimized: true,
-    domains: ['pixeldrain.com'],
   },
   
   // Configurações adicionais
@@ -19,12 +18,6 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-
-  // Configurações experimentais
-  experimental: {
-    // Permitir páginas dinâmicas na exportação estática
-    appDir: true,
   }
 };
 
