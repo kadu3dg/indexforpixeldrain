@@ -25,7 +25,17 @@ async function handleRequest(request) {
     const apiKey = url.searchParams.get('apiKey');
 
     if (!endpoint) {
-      return new Response('Endpoint não especificado', { status: 400 });
+      return new Response(JSON.stringify({
+        error: 'Endpoint não especificado',
+        files: [],
+        lists: []
+      }), { 
+        status: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
     }
 
     // Construir a URL do Pixeldrain corretamente
@@ -54,21 +64,52 @@ async function handleRequest(request) {
     // Ler o corpo da resposta
     const responseBody = await response.text();
     
+    // Tentar fazer parse do JSON
+    let jsonResponse;
+    try {
+      jsonResponse = JSON.parse(responseBody);
+    } catch (e) {
+      // Se não for JSON válido, criar uma resposta padrão
+      if (endpoint.includes('files')) {
+        jsonResponse = { success: false, error: 'Erro ao processar resposta', files: [] };
+      } else if (endpoint.includes('lists')) {
+        jsonResponse = { success: false, error: 'Erro ao processar resposta', lists: [] };
+      } else {
+        jsonResponse = { success: false, error: 'Erro ao processar resposta' };
+      }
+    }
+    
+    // Garantir que os arrays esperados existam sempre
+    if (endpoint.includes('files') && !jsonResponse.files) {
+      jsonResponse.files = [];
+    }
+    if (endpoint.includes('lists') && !jsonResponse.lists) {
+      jsonResponse.lists = [];
+    }
+    
     // Criar uma nova resposta com os headers CORS
     const responseHeaders = new Headers();
     Object.keys(corsHeaders).forEach(key => {
       responseHeaders.set(key, corsHeaders[key]);
     });
-    responseHeaders.set('Content-Type', response.headers.get('Content-Type') || 'application/json');
+    responseHeaders.set('Content-Type', 'application/json');
 
-    return new Response(responseBody, {
-      status: response.status,
+    return new Response(JSON.stringify(jsonResponse), {
+      status: response.ok ? 200 : response.status,
       statusText: response.statusText,
       headers: responseHeaders,
     });
   } catch (error) {
     console.error('Erro no worker:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    
+    // Responder com uma estrutura que o frontend espera
+    const errorResponse = {
+      error: error.message,
+      files: [],
+      lists: []
+    };
+    
+    return new Response(JSON.stringify(errorResponse), {
       status: 500,
       headers: {
         ...corsHeaders,
