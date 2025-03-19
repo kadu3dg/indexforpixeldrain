@@ -17,7 +17,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreBuildErrors: true,
   },
 
   // Configurações de páginas
@@ -25,22 +25,11 @@ const nextConfig = {
 
   // Configurações experimentais
   experimental: {
-    // Habilitar suporte para rotas dinâmicas na exportação estática
-    staticPageGenerationTimeout: 60
+    // Remover configurações inválidas
   },
 
-  // Configuração de rotas dinâmicas
-  async exportPathMap(defaultPathMap, { dev, dir, outDir, distDir, buildId }) {
-    // Adicionar rotas dinâmicas manualmente
-    const dynamicRoutes = {
-      '/album/default-album': { page: '/album/[id]', query: { id: 'default-album' } }
-    };
-
-    return {
-      ...defaultPathMap,
-      ...dynamicRoutes
-    };
-  }
+  // Desabilitar configuração de rotas dinâmicas
+  // generateStaticParams será usado no arquivo page.tsx
 };
 
 module.exports = nextConfig; 
