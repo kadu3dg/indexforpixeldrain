@@ -29,23 +29,21 @@ export interface PixeldrainAlbum {
 
 export class PixeldrainService {
   private apiKey: string;
-  private baseUrl: string;
-  private corsProxy: string;
+  private workerUrl: string;
 
   constructor(apiKey: string = 'aa73d120-100e-426e-93ba-c7e1569b0322') {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://pixeldrain.com/api';
-    this.corsProxy = 'https://api.allorigins.win/raw?url=';
+    this.workerUrl = 'https://pixeldrain-proxy.kadulavinia.workers.dev';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const url = new URL(endpoint, this.baseUrl);
-    const proxyUrl = this.corsProxy + encodeURIComponent(url.toString());
+    const url = new URL(this.workerUrl);
+    url.searchParams.set('endpoint', endpoint);
+    url.searchParams.set('apiKey', this.apiKey);
 
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/json');
     headers.set('Content-Type', 'application/json');
-    headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
 
     const fetchOptions: RequestInit = {
       ...options,
@@ -55,7 +53,7 @@ export class PixeldrainService {
     };
 
     try {
-      const response = await fetch(proxyUrl, fetchOptions);
+      const response = await fetch(url.toString(), fetchOptions);
 
       if (!response.ok) {
         const errorData = await response.text();
