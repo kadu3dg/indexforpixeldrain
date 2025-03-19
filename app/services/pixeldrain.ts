@@ -47,7 +47,7 @@ export class PixeldrainService {
   async getFiles() {
     try {
       // Endpoint correto para buscar arquivos do usuário
-      const response = await this.fetchWithAuth('/user/files');
+      const response = await this.fetchWithAuth('/file');
       console.log('Resposta da API de arquivos:', response);
       
       // Verificar se a resposta foi bem-sucedida
@@ -78,7 +78,7 @@ export class PixeldrainService {
         this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
       
       // Endpoint correto de acordo com a documentação da API
-      const response = await this.fetchWithAuth('/user/lists');
+      const response = await this.fetchWithAuth('/list');
       console.log('Resposta da API de álbuns:', response);
       
       // Verificar se a resposta contém erro
