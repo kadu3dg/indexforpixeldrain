@@ -12,8 +12,19 @@ interface AlbumListProps {
   onPlayVideo: (fileId: string, fileName: string) => void;
 }
 
+type ViewMode = 'grid' | 'list';
+type SortOrder = 'asc' | 'desc';
+
 export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveFile, onPlayVideo }: AlbumListProps) {
   const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  // Ordenar álbuns
+  const sortedAlbums = [...albums].sort((a, b) => {
+    const comparison = a.title.localeCompare(b.title);
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
 
   // Expandir o primeiro álbum por padrão quando a lista de álbuns mudar
   useEffect(() => {
@@ -42,6 +53,14 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
     setExpandedAlbums(new Set());
   };
 
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
+  };
+
   const isVideoFile = (mimeType: string) => {
     return mimeType.startsWith('video/');
   };
@@ -58,7 +77,33 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Álbuns</h2>
-        <div className="space-x-2">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={toggleViewMode}
+            className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {viewMode === 'grid' ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM14 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+              )}
+            </svg>
+            {viewMode === 'grid' ? 'Visualizar em Lista' : 'Visualizar em Grade'}
+          </button>
+          <button
+            onClick={toggleSortOrder}
+            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {sortOrder === 'asc' ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m0 0v8m0-8h2"/>
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m0 0v-8m0 8h2"/>
+              )}
+            </svg>
+            Ordenar {sortOrder === 'asc' ? 'Z-A' : 'A-Z'}
+          </button>
           <button
             onClick={expandAllAlbums}
             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -77,11 +122,13 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
       {albums.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">Nenhum álbum encontrado</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {albums.map((album) => (
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-4"}>
+          {sortedAlbums.map((album) => (
             <div
               key={album.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-all duration-200 hover:shadow-lg"
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-all duration-200 hover:shadow-lg ${
+                viewMode === 'list' ? 'w-full' : ''
+              }`}
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
@@ -95,7 +142,7 @@ export default function AlbumList({ albums, onCreateAlbum, onDeleteFile, onMoveF
                     Criado em: {formatDate(album.date_created)}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Total de arquivos: {album.file_count || album.files?.length || 0}
+                    Total de arquivos: {album.files?.length || 0}
                   </p>
                 </div>
                 <button

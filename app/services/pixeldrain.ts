@@ -84,11 +84,28 @@ export class PixeldrainService {
       const data = await this.fetchWithAuth('/user/lists');
       const lists = data.lists || [];
       
-      // Garantir que cada álbum tenha o file_count preenchido
-      return lists.map((list: PixeldrainAlbum) => ({
-        ...list,
-        file_count: list.file_count || list.files?.length || 0
-      }));
+      // Buscar os detalhes de cada álbum para obter os arquivos
+      const albumsWithDetails = await Promise.all(
+        lists.map(async (list: PixeldrainAlbum) => {
+          try {
+            const details = await this.getListDetails(list.id);
+            return {
+              ...list,
+              files: details.files,
+              file_count: details.files.length
+            };
+          } catch (error) {
+            console.error(`Erro ao buscar detalhes do álbum ${list.id}:`, error);
+            return {
+              ...list,
+              files: [],
+              file_count: 0
+            };
+          }
+        })
+      );
+
+      return albumsWithDetails;
     } catch (error) {
       console.error('Erro ao buscar álbuns:', error);
       return [];
