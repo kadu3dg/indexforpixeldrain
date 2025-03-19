@@ -6,6 +6,12 @@ export interface PixeldrainFile {
   date_upload: string;
   date_last_view: string;
   mime_type: string;
+  description?: string;
+}
+
+export interface PixeldrainListItem {
+  id: string;
+  description?: string;
 }
 
 export interface PixeldrainAlbum {
@@ -14,18 +20,16 @@ export interface PixeldrainAlbum {
   description: string;
   date_created: string;
   file_count?: number;
-  files?: PixeldrainFile[];
+  files?: PixeldrainListItem[];
   count?: number; // Campo adicional retornado pela API
 }
 
 export class PixeldrainService {
-  // Chave API do Pixeldrain - IMPORTANTE: verifique se a chave está correta
-  // Formato da chave: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (UUID)
+  // Chave API do Pixeldrain
   private apiKey: string;
   private baseUrl: string = 'https://pixeldrain.com/api';
   private useProxy: boolean = true; // Usar o proxy para evitar problemas de CORS
 
-  // É possível usar a aplicação sem API key, mas a autenticação será limitada
   constructor(apiKey?: string) {
     // Verificar se a apiKey foi fornecida, caso contrário usar a default
     if (apiKey && apiKey.trim().length > 0) {
@@ -42,8 +46,8 @@ export class PixeldrainService {
   // Método para obter os arquivos do usuário
   async getFiles() {
     try {
-      // Usar a API real do Pixeldrain
-      const response = await this.fetchWithAuth('/file');
+      // Endpoint correto para buscar arquivos do usuário
+      const response = await this.fetchWithAuth('/user/files');
       console.log('Resposta da API de arquivos:', response);
       
       // Verificar se a resposta foi bem-sucedida
@@ -73,8 +77,8 @@ export class PixeldrainService {
       console.log('Tentando buscar álbuns com a chave API:', 
         this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
       
-      // Corrigido: A rota correta para buscar listas
-      const response = await this.fetchWithAuth('/file');
+      // Endpoint correto de acordo com a documentação da API
+      const response = await this.fetchWithAuth('/user/lists');
       console.log('Resposta da API de álbuns:', response);
       
       // Verificar se a resposta contém erro
@@ -111,79 +115,43 @@ export class PixeldrainService {
         };
       }
       
-      // Verificar se a resposta contém a propriedade 'lists' que contém os álbuns
+      // Verificar diferentes formatos de resposta que a API pode retornar
+      if (Array.isArray(response)) {
+        console.log('API retornou um array de álbuns diretamente:', response);
+        return {
+          success: true,
+          albums: response
+        };
+      }
+      
       if (response.lists) {
-        console.log('Encontrado campo "lists" na resposta:', response.lists);
+        console.log('API retornou álbuns no campo "lists":', response.lists);
         return {
           success: true,
           albums: response.lists
         };
       }
       
-      // Se a resposta não tem álbuns, mas não tem erro explícito, pode ser que seja um array vazio
-      if (!response.albums && !response.error) {
-        // Se a resposta é um array, assumimos que são os álbuns
-        if (Array.isArray(response)) {
-          console.log('Resposta é um array, convertendo para formato esperado');
-          return {
-            success: true,
-            albums: response
-          };
-        }
-        
-        // Se não foi detectado como erro, mas não temos álbuns, retornar array vazio
-        console.log('Resposta não contém álbuns nem erros, retornando array vazio');
+      if (response.albums) {
+        console.log('API retornou álbuns no campo "albums":', response.albums);
         return {
           success: true,
-          albums: []
+          albums: response.albums
         };
       }
       
-      return response;
+      console.log('API retornou formato desconhecido, retornando objeto original:', response);
+      return {
+        success: true,
+        albums: [],
+        response: response // Incluir resposta original para diagnóstico
+      };
     } catch (error) {
       console.error('Erro crítico ao buscar álbuns:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido',
         albums: []
-      };
-    }
-  }
-
-  // Método para obter os arquivos de um álbum específico
-  async getAlbumFiles(albumId: string) {
-    try {
-      // Verificar se o ID do álbum foi fornecido
-      if (!albumId) {
-        console.error('ID do álbum não fornecido');
-        return {
-          success: false,
-          error: 'ID do álbum não fornecido',
-          files: []
-        };
-      }
-      
-      // Usar a API real do Pixeldrain - a rota para listas é /list/{id}
-      const response = await this.fetchWithAuth(`/list/${albumId}`);
-      console.log(`Resposta da API para o álbum ${albumId}:`, response);
-      
-      // Verificar se a resposta contém erro
-      if (response.success === false) {
-        console.error(`Erro ao buscar arquivos do álbum ${albumId}:`, response.error);
-        return {
-          success: false,
-          error: response.error || `Erro ao buscar arquivos do álbum ${albumId}`,
-          files: []
-        };
-      }
-      
-      return response;
-    } catch (error) {
-      console.error(`Erro crítico ao buscar arquivos do álbum ${albumId}:`, error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        files: []
       };
     }
   }
@@ -239,11 +207,11 @@ export class PixeldrainService {
       
       console.log(`[Proxy] Fazendo requisição para: ${proxyUrl.toString()}`);
       
-      // Configurar as opções da requisição
+      // Configurar as opções da requisição com cabeçalhos corretos
       const fetchOptions: RequestInit = {
         ...options,
         headers: {
-          'Accept': 'application/json', // Solicitar explicitamente JSON
+          'Accept': 'application/json',
           ...options.headers
         },
       };
@@ -332,14 +300,16 @@ export class PixeldrainService {
 
   async listFiles(): Promise<{ files: PixeldrainFile[]; albums: PixeldrainAlbum[] }> {
     try {
-      // Usar as rotas de API internas do Next.js
-      const filesResponse = await this.fetchWithAuth('/file');
+      // Buscar arquivos e álbuns em chamadas separadas para garantir que obtemos os dados corretos
+      const filesResponse = await this.getFiles();
+      const albumsResponse = await this.getAlbums();
       
-      console.log('Resposta da API de arquivos:', filesResponse);
+      console.log('Arquivos obtidos:', filesResponse);
+      console.log('Álbuns obtidos:', albumsResponse);
       
-      // Obter os arquivos e listas da resposta
+      // Extrair os arquivos e álbuns das respostas
       const files = filesResponse.files || [];
-      const albums = filesResponse.lists || [];
+      const albums = albumsResponse.albums || [];
       
       // Carregar os arquivos de cada álbum
       const albumsWithFiles = await Promise.all(
@@ -388,22 +358,54 @@ export class PixeldrainService {
   }
 
   async createAlbum(title: string, description: string): Promise<PixeldrainAlbum> {
-    const data = await this.fetchWithAuth('/album', {
+    const data = await this.fetchWithAuth('/list', {
       method: 'POST',
-      body: JSON.stringify({ title, description })
+      body: JSON.stringify({ title, description, files: [] })
     });
     return data;
   }
 
   async addFileToAlbum(fileId: string, albumId: string): Promise<void> {
-    await this.fetchWithAuth(`/album/${albumId}/${fileId}`, {
-      method: 'PUT'
+    // Para adicionar um arquivo a uma lista, é necessário obter a lista atual,
+    // adicionar o arquivo à lista de arquivos e atualizar a lista completa
+    const album = await this.getAlbum(albumId);
+    const fileList = album.files || [];
+    
+    // Verificar se o arquivo já está na lista
+    const fileExists = fileList.some(file => file.id === fileId);
+    if (fileExists) {
+      console.log(`Arquivo ${fileId} já existe no álbum ${albumId}`);
+      return;
+    }
+    
+    // Adicionar o arquivo à lista
+    fileList.push({ id: fileId, description: '' } as PixeldrainListItem);
+    
+    // Atualizar a lista
+    await this.fetchWithAuth(`/list/${albumId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: album.title,
+        description: album.description,
+        files: fileList
+      })
     });
   }
 
   async removeFileFromAlbum(fileId: string, albumId: string): Promise<void> {
-    await this.fetchWithAuth(`/album/${albumId}/${fileId}`, {
-      method: 'DELETE'
+    // Para remover um arquivo de uma lista, é necessário obter a lista atual,
+    // remover o arquivo da lista de arquivos e atualizar a lista completa
+    const album = await this.getAlbum(albumId);
+    const fileList = (album.files || []).filter(file => file.id !== fileId);
+    
+    // Atualizar a lista
+    await this.fetchWithAuth(`/list/${albumId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: album.title,
+        description: album.description,
+        files: fileList
+      })
     });
   }
 } 
