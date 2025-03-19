@@ -25,7 +25,9 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
   useEffect(() => {
     const loadAlbum = async () => {
       try {
+        console.log('Carregando álbum com ID:', params.id);
         const albumData = await pixeldrainService.getListDetails(params.id);
+        console.log('Dados do álbum:', albumData);
         setAlbum(albumData);
       } catch (error) {
         console.error('Erro ao carregar álbum:', error);
