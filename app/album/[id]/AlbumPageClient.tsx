@@ -5,7 +5,6 @@ import { PixeldrainService, PixeldrainAlbum } from '../../services/pixeldrain';
 import AlbumViewer from '../../components/AlbumViewer';
 import { CircularProgress, Alert, Button } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 interface AlbumPageClientProps {
   params: {
@@ -60,9 +59,24 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
       <div className="max-w-6xl mx-auto">
         <div className="mb-4 flex items-center">
           <Button
-            startIcon={<ArrowBackIcon />}
             onClick={handleBack}
             variant="contained"
+            startIcon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+            }
             sx={{
               backgroundColor: '#333',
               color: '#fff',

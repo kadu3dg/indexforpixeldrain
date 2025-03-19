@@ -20,11 +20,6 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  // Configurações de roteamento
-  experimental: {
-    appDir: true,
-  },
-
   // Configurações de páginas
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   distDir: 'out'
