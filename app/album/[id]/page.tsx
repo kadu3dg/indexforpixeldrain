@@ -26,12 +26,18 @@ export async function generateStaticParams() {
 }
 
 // Esta função é necessária para gerar as páginas estáticas
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: { id: string } 
+}): Promise<Metadata> {
   // Validação mais robusta do ID
-  if (!params.id || 
-      params.id.trim() === '' || 
-      params.id === 'default-album' || 
-      params.id === 'undefined') {
+  const albumId = params.id?.trim();
+  
+  if (!albumId || 
+      albumId === '' || 
+      albumId === 'default-album' || 
+      albumId === 'undefined') {
     return {
       title: 'Álbum não encontrado - Pixeldrain',
       description: 'Álbum não disponível ou inválido'
@@ -41,13 +47,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const pixeldrainService = new PixeldrainService();
   
   try {
-    const albumDetails = await pixeldrainService.getListDetails(params.id);
+    const albumDetails = await pixeldrainService.getListDetails(albumId);
     return {
-      title: albumDetails.title || `Álbum ${params.id} - Pixeldrain`,
+      title: albumDetails.title || `Álbum ${albumId} - Pixeldrain`,
       description: albumDetails.description || 'Detalhes do álbum no Pixeldrain'
     };
   } catch (error) {
-    console.error(`Erro ao buscar metadados para o álbum ${params.id}:`, error);
+    console.error(`Erro ao buscar metadados para o álbum ${albumId}:`, error);
     return {
       title: 'Álbum não encontrado - Pixeldrain',
       description: 'Não foi possível carregar os detalhes do álbum'
@@ -55,14 +61,20 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 }
 
-export default function AlbumPage({ params }: { params: { id: string } }) {
+export default async function AlbumPage({ 
+  params 
+}: { 
+  params: { id: string } 
+}) {
   // Validação mais robusta do ID
-  if (!params.id || 
-      params.id.trim() === '' || 
-      params.id === 'default-album' || 
-      params.id === 'undefined') {
+  const albumId = params.id?.trim();
+  
+  if (!albumId || 
+      albumId === '' || 
+      albumId === 'default-album' || 
+      albumId === 'undefined') {
     return <div>ID do álbum inválido</div>;
   }
 
-  return <AlbumPageClient params={params} />;
+  return <AlbumPageClient params={{ id: albumId }} />;
 } 

@@ -25,26 +25,18 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
   useEffect(() => {
     const loadAlbum = async () => {
       try {
-        // Log detalhado para depuração
-        console.log('Parâmetros recebidos:', {
-          id: params.id,
-          type: typeof params.id,
-          isUndefined: params.id === undefined,
-          isNull: params.id === null,
-          isEmpty: params.id === '',
-          isDefaultAlbum: params.id === 'default-album'
-        });
-
-        // Validação mais flexível do ID do álbum
-        if (!params.id || 
-            params.id.trim() === '' || 
-            params.id === 'default-album' || 
-            params.id === 'undefined') {
-          throw new Error(`ID de álbum inválido: "${params.id}"`);
+        // Validação mais robusta do ID
+        const albumId = params.id?.trim();
+        
+        if (!albumId || 
+            albumId === '' || 
+            albumId === 'default-album' || 
+            albumId === 'undefined') {
+          throw new Error(`ID de álbum inválido: "${albumId}"`);
         }
 
-        console.log('Carregando álbum com ID:', params.id);
-        const albumData = await pixeldrainService.getListDetails(params.id);
+        console.log('Carregando álbum com ID:', albumId);
+        const albumData = await pixeldrainService.getListDetails(albumId);
         console.log('Dados do álbum:', albumData);
         setAlbum(albumData);
       } catch (error) {
