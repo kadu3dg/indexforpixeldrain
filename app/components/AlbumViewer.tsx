@@ -25,6 +25,13 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, viewMode = 'grid' }) =
   return (
     <div className="bg-gray-900 rounded-lg shadow-lg overflow-hidden">
       <div className="p-4">
+        {selectedFile && (
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-black bg-white p-2 rounded">
+              {selectedFile.name}
+            </h2>
+          </div>
+        )}
         <FileViewer file={selectedFile} />
       </div>
 

@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
 import { PixeldrainAlbum } from '../services/pixeldrain';
 import { formatDate } from '../utils/format';
-import Link from 'next/link';
 
 interface AlbumListProps {
   albums: PixeldrainAlbum[];
-  onCreateAlbum: (e: React.FormEvent) => Promise<void>;
 }
 
 type ViewMode = 'grid' | 'list';
 type SortOrder = 'asc' | 'desc';
 
-export default function AlbumList({ albums, onCreateAlbum }: AlbumListProps) {
+export default function AlbumList({ albums }: AlbumListProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
@@ -23,12 +22,12 @@ export default function AlbumList({ albums, onCreateAlbum }: AlbumListProps) {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const toggleSortOrder = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
   return (
@@ -47,7 +46,7 @@ export default function AlbumList({ albums, onCreateAlbum }: AlbumListProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM14 13a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
               )}
             </svg>
-            {viewMode === 'grid' ? 'Visualizar em Lista' : 'Visualizar em Grade'}
+            {viewMode === 'grid' ? 'Lista' : 'Grade'}
           </button>
           <button
             onClick={toggleSortOrder}
@@ -60,7 +59,7 @@ export default function AlbumList({ albums, onCreateAlbum }: AlbumListProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m0 0v-8m0 8h2"/>
               )}
             </svg>
-            Ordenar {sortOrder === 'asc' ? 'Z-A' : 'A-Z'}
+            {sortOrder === 'asc' ? 'Z-A' : 'A-Z'}
           </button>
         </div>
       </div>
