@@ -1,15 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removendo output: 'export' para permitir rotas de API dinâmicas
-  // output: 'export',
+  // Habilitando exportação estática
+  output: 'export',
+  
+  // Configurando o caminho base para o GitHub Pages
   basePath: process.env.NODE_ENV === 'production' ? '/indexforpixeldrain' : '',
   
-  // Configurações de imagens no nível correto
+  // Configurações de imagens
   images: {
     unoptimized: true,
-    domains: ['pixeldrain.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pixeldrain.com',
+        pathname: '/api/**',
+      },
+    ],
   },
   
+  // Configurações adicionais
   trailingSlash: true,
   typescript: {
     ignoreBuildErrors: true,

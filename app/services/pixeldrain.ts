@@ -503,11 +503,114 @@ export class PixeldrainService {
     try {
       // Prepara o caminho do endpoint
       const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      const url = new URL(path, this.baseUrl);
       
-      // Use o proxy para fazer a requisição
-      return this.fetchWithProxy(path, options);
+      // Configurar os cabeçalhos
+      const headers = new Headers(options.headers);
+      headers.append('Accept', 'application/json');
+      
+      // Adicionar autenticação se a apiKey estiver presente
+      if (this.apiKey) {
+        const authHeader = `Basic ${Buffer.from(`:${this.apiKey}`).toString('base64')}`;
+        headers.append('Authorization', authHeader);
+      }
+      
+      // Fazer a requisição diretamente para a API do Pixeldrain
+      const response = await fetch(url.toString(), {
+        ...options,
+        headers,
+      });
+      
+      // Clonar a resposta para permitir múltiplas leituras
+      const clonedResponse = response.clone();
+      
+      // Verificar se a resposta é bem-sucedida
+      if (!response.ok) {
+        let errorText;
+        
+        try {
+          // Tenta ler a resposta como texto
+          errorText = await clonedResponse.text();
+          
+          // Verifica se o texto pode ser JSON
+          if (errorText.trim().startsWith('{') || errorText.trim().startsWith('[')) {
+            try {
+              // Tenta converter o texto para JSON
+              const errorJson = JSON.parse(errorText);
+              return {
+                success: false,
+                error: `API do Pixeldrain retornou erro: ${response.status} ${response.statusText}`,
+                details: errorJson
+              };
+            } catch (jsonError) {
+              console.error('Erro ao processar JSON de erro:', jsonError);
+            }
+          }
+          
+          // Se for HTML ou texto puro, retorna mensagem de erro
+          if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+            console.error('API retornou HTML em vez de JSON', errorText.substring(0, 500));
+            return {
+              success: false,
+              error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
+              text: errorText.substring(0, 500)
+            };
+          }
+          
+          // Para outros tipos de texto
+          return {
+            success: false,
+            error: `API do Pixeldrain retornou erro: ${response.status} ${response.statusText}`,
+            text: errorText.substring(0, 500)
+          };
+        } catch (textError) {
+          console.error('Erro ao ler resposta como texto:', textError);
+          return {
+            success: false,
+            error: `API do Pixeldrain retornou erro ${response.status} sem dados adicionais`
+          };
+        }
+      }
+      
+      // Processar a resposta bem-sucedida
+      try {
+        const contentType = response.headers.get('content-type') || '';
+        
+        // Se o content-type for JSON, processar como JSON
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          return data;
+        } else {
+          // Para outros tipos, retornar o texto e informar o content-type
+          const textData = await clonedResponse.text();
+          
+          // Tentar interpretar como JSON mesmo se o content-type não for JSON
+          if (textData.trim().startsWith('{') || textData.trim().startsWith('[')) {
+            try {
+              const jsonData = JSON.parse(textData);
+              return jsonData;
+            } catch (jsonError) {
+              console.error('Erro ao interpretar como JSON:', jsonError);
+            }
+          }
+          
+          // Fallback para texto
+          return {
+            success: true,
+            contentType,
+            text: textData
+          };
+        }
+      } catch (dataError) {
+        console.error('Erro ao processar dados da resposta:', dataError);
+        return {
+          success: false,
+          error: 'Erro ao processar resposta da API do Pixeldrain',
+          details: dataError instanceof Error ? dataError.message : String(dataError)
+        };
+      }
     } catch (error) {
-      console.error('Erro na requisição autenticada:', error);
+      console.error('Erro na requisição:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido na requisição'
@@ -519,85 +622,7 @@ export class PixeldrainService {
    * Método para fazer requisições através do proxy interno
    */
   private async fetchWithProxy(path: string, options: RequestInit = {}) {
-    try {
-      // Construir a URL para o proxy
-      const proxyUrl = new URL('/api/pixeldrain-proxy', window.location.origin);
-      
-      // Adicionar o caminho da API e a apiKey como parâmetros de consulta
-      proxyUrl.searchParams.append('path', path);
-      if (this.apiKey) {
-        proxyUrl.searchParams.append('apiKey', this.apiKey);
-      }
-      
-      console.log(`[Proxy] Fazendo requisição para: ${proxyUrl.toString()}`);
-      
-      // Configurar as opções da requisição
-      const fetchOptions: RequestInit = {
-        ...options,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
-      };
-      
-      // Fazer a requisição para o proxy
-      const response = await fetch(proxyUrl.toString(), fetchOptions);
-      
-      // Verificar status da resposta
-      if (!response.ok) {
-        console.error(`[Proxy] Resposta com erro: ${response.status} - ${response.statusText || 'Sem mensagem'}`);
-      } else {
-        console.log(`[Proxy] Resposta bem-sucedida: ${response.status}`);
-      }
-      
-      // Clonar a resposta para evitar "body already read"
-      const clonedResponse = response.clone();
-      
-      try {
-        // Tentar processar a resposta como JSON
-        const data = await response.json();
-        return data;
-      } catch (jsonError) {
-        console.error('[Proxy] Erro ao processar resposta como JSON:', jsonError);
-        
-        // Se falhar, tente ler como texto
-        const textResponse = await clonedResponse.text();
-        
-        if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html')) {
-          console.error('[Proxy] Resposta contém HTML:', textResponse.substring(0, 500));
-          return {
-            success: false,
-            error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
-            text: textResponse.substring(0, 1000)
-          };
-        }
-        
-        try {
-          // Tentar converter o texto para JSON manualmente
-          if (textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) {
-            return JSON.parse(textResponse);
-          }
-        } catch (parseError) {
-          // Se falhar na conversão manual, retornar erro
-          console.error('[Proxy] Erro ao converter texto para JSON:', parseError);
-        }
-        
-        return {
-          success: false,
-          error: 'Erro ao processar resposta. A resposta não está em formato JSON válido.',
-          text: textResponse.substring(0, 500)
-        };
-      }
-    } catch (error) {
-      console.error('[Proxy] Erro ao fazer requisição:', error);
-      return {
-        success: false,
-        error: error instanceof Error 
-          ? `Erro ao fazer requisição: ${error.message}` 
-          : 'Erro desconhecido ao fazer requisição'
-      };
-    }
+    return this.fetchWithAuth(path, options);
   }
 
   /**
