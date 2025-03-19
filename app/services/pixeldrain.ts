@@ -30,19 +30,24 @@ export interface PixeldrainAlbum {
 export class PixeldrainService {
   private apiKey: string;
   private baseUrl: string;
+  private corsProxy: string;
 
   constructor(apiKey: string = 'aa73d120-100e-426e-93ba-c7e1569b0322') {
     this.apiKey = apiKey;
     this.baseUrl = 'https://pixeldrain.com/api';
+    // Usando o CORS Anywhere como proxy temporário
+    this.corsProxy = 'https://cors-anywhere.herokuapp.com/';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const url = new URL(endpoint, this.baseUrl);
-    
+    const proxyUrl = this.corsProxy + url.toString();
+
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/json');
     headers.set('Content-Type', 'application/json');
     headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
+    headers.set('X-Requested-With', 'XMLHttpRequest'); // Necessário para o CORS Anywhere
 
     const fetchOptions: RequestInit = {
       ...options,
@@ -52,10 +57,15 @@ export class PixeldrainService {
     };
 
     try {
-      const response = await fetch(url.toString(), fetchOptions);
+      const response = await fetch(proxyUrl, fetchOptions);
 
       if (!response.ok) {
         const errorData = await response.text();
+        console.error('Erro na resposta:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: errorData
+        });
         throw new Error(`Erro na API do Pixeldrain: ${response.status} ${response.statusText}\n${errorData}`);
       }
 
