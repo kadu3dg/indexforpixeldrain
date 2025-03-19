@@ -74,7 +74,7 @@ export class PixeldrainService {
         this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
       
       // IMPORTANTE: A rota correta para os álbuns do usuário é /user/lists
-      const response = await this.fetchWithAuth('/user/lists');
+      const response = await this.fetchWithAuth('/user/albums');
       console.log('Resposta da API de álbuns:', response);
       
       // Verificar se a resposta contém erro
