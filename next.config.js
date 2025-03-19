@@ -22,35 +22,6 @@ const nextConfig = {
 
   // Configurações de páginas
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  distDir: 'out',
-
-  // Configurações de rotas
-  exportPathMap: async function (
-    defaultPathMap,
-    { dev, dir, outDir, distDir, buildId }
-  ) {
-    const paths = {
-      '/': { page: '/' },
-    };
-
-    // Adicionar rotas dinâmicas para álbuns
-    try {
-      const PixeldrainService = require('./app/services/pixeldrain').PixeldrainService;
-      const service = new PixeldrainService();
-      const albums = await service.getUserLists();
-
-      for (const album of albums) {
-        paths[`/album/${album.id}`] = {
-          page: '/album/[id]',
-          query: { id: album.id },
-        };
-      }
-    } catch (error) {
-      console.error('Erro ao gerar rotas de álbuns:', error);
-    }
-
-    return paths;
-  }
 };
 
 module.exports = nextConfig; 
