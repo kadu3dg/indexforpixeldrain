@@ -87,6 +87,16 @@ async function handleRequest(request) {
       jsonResponse.lists = [];
     }
     
+    // Garantir que o campo 'files' dentro de cada item de 'lists' nunca seja nulo
+    if (jsonResponse.lists && Array.isArray(jsonResponse.lists)) {
+      jsonResponse.lists = jsonResponse.lists.map(list => {
+        if (list.files === null || list.files === undefined) {
+          list.files = [];
+        }
+        return list;
+      });
+    }
+    
     // Criar uma nova resposta com os headers CORS
     const responseHeaders = new Headers();
     Object.keys(corsHeaders).forEach(key => {
