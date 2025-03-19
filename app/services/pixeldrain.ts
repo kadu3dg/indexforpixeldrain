@@ -35,19 +35,17 @@ export class PixeldrainService {
   constructor(apiKey: string = 'aa73d120-100e-426e-93ba-c7e1569b0322') {
     this.apiKey = apiKey;
     this.baseUrl = 'https://pixeldrain.com/api';
-    // Usando o CORS Anywhere como proxy temporário
-    this.corsProxy = 'https://cors-anywhere.herokuapp.com/';
+    this.corsProxy = 'https://api.allorigins.win/raw?url=';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const url = new URL(endpoint, this.baseUrl);
-    const proxyUrl = this.corsProxy + url.toString();
+    const proxyUrl = this.corsProxy + encodeURIComponent(url.toString());
 
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/json');
     headers.set('Content-Type', 'application/json');
     headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
-    headers.set('X-Requested-With', 'XMLHttpRequest'); // Necessário para o CORS Anywhere
 
     const fetchOptions: RequestInit = {
       ...options,
