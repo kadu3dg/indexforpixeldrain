@@ -61,31 +61,50 @@ export class PixeldrainService {
       headers.set('Authorization', `Basic ${btoa(`:${this.apiKey}`)}`);
     }
 
-    const response = await fetch(url.toString(), {
+    const fetchOptions: RequestInit = {
       ...options,
-      headers
-    });
+      headers,
+      mode: 'cors',
+      credentials: 'omit'
+    };
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Erro na API do Pixeldrain: ${response.status} ${response.statusText}\n${errorData}`);
+    try {
+      const response = await fetch(url.toString(), fetchOptions);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Erro na API do Pixeldrain: ${response.status} ${response.statusText}\n${errorData}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Erro na requisição:', error);
+      throw error;
     }
-
-    return response.json();
   }
 
   async getFiles(): Promise<PixeldrainFile[]> {
-    const data = await this.fetchWithAuth('/user/files');
-    return data.files || [];
+    try {
+      const data = await this.fetchWithAuth('/user/files');
+      return data.files || [];
+    } catch (error) {
+      console.error('Erro ao buscar arquivos:', error);
+      return [];
+    }
   }
 
   async getUserLists(): Promise<PixeldrainAlbum[]> {
-    const data = await this.fetchWithAuth('/user/lists');
-    return data.lists || [];
+    try {
+      const data = await this.fetchWithAuth('/user/lists');
+      return data.lists || [];
+    } catch (error) {
+      console.error('Erro ao buscar álbuns:', error);
+      return [];
+    }
   }
 
   async createAlbum(title: string, description: string = ''): Promise<PixeldrainAlbum> {
-    const data = await this.fetchWithAuth('/list', {
+    return this.fetchWithAuth('/list', {
       method: 'POST',
       body: JSON.stringify({
         title,
@@ -93,7 +112,6 @@ export class PixeldrainService {
         files: []
       })
     });
-    return data;
   }
 
   async addFileToAlbum(albumId: string, fileId: string): Promise<void> {
