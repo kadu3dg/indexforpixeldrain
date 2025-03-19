@@ -8,20 +8,30 @@ export async function generateStaticParams() {
   const pixeldrainService = new PixeldrainService();
   try {
     const albums = await pixeldrainService.getUserLists();
-    return albums.map(album => ({
-      id: album.id
-    }));
+    
+    // Filtrar IDs inválidos e adicionar um ID padrão
+    const validAlbums = albums
+      .filter(album => album.id && album.id.trim() !== '')
+      .map(album => ({ id: album.id }));
+    
+    // Adicionar um ID padrão se nenhum álbum for encontrado
+    return validAlbums.length > 0 
+      ? validAlbums 
+      : [{ id: 'default-album' }];
   } catch (error) {
     console.error('Erro ao gerar parâmetros estáticos:', error);
-    // Retornar pelo menos um ID para garantir que a página seja gerada
+    // Retornar um ID padrão em caso de erro
     return [{ id: 'default-album' }];
   }
 }
 
 // Esta função é necessária para gerar as páginas estáticas
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  // Verificar se o ID é válido antes de tentar buscar os detalhes
-  if (!params.id || params.id === 'default-album') {
+  // Validação mais robusta do ID
+  if (!params.id || 
+      params.id.trim() === '' || 
+      params.id === 'default-album' || 
+      params.id === 'undefined') {
     return {
       title: 'Álbum não encontrado - Pixeldrain',
       description: 'Álbum não disponível ou inválido'
@@ -46,8 +56,11 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default function AlbumPage({ params }: { params: { id: string } }) {
-  // Adicionar validação para garantir que o ID não seja undefined
-  if (!params.id) {
+  // Validação mais robusta do ID
+  if (!params.id || 
+      params.id.trim() === '' || 
+      params.id === 'default-album' || 
+      params.id === 'undefined') {
     return <div>ID do álbum inválido</div>;
   }
 

@@ -25,9 +25,22 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
   useEffect(() => {
     const loadAlbum = async () => {
       try {
-        // Validar o ID do álbum antes de fazer a requisição
-        if (!params.id || params.id === 'default-album') {
-          throw new Error('ID de álbum inválido');
+        // Log detalhado para depuração
+        console.log('Parâmetros recebidos:', {
+          id: params.id,
+          type: typeof params.id,
+          isUndefined: params.id === undefined,
+          isNull: params.id === null,
+          isEmpty: params.id === '',
+          isDefaultAlbum: params.id === 'default-album'
+        });
+
+        // Validação mais flexível do ID do álbum
+        if (!params.id || 
+            params.id.trim() === '' || 
+            params.id === 'default-album' || 
+            params.id === 'undefined') {
+          throw new Error(`ID de álbum inválido: "${params.id}"`);
         }
 
         console.log('Carregando álbum com ID:', params.id);
@@ -36,13 +49,19 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
         setAlbum(albumData);
       } catch (error) {
         console.error('Erro ao carregar álbum:', error);
-        setError(error instanceof Error ? error.message : 'Erro ao carregar álbum');
+        
+        // Adicionar mais detalhes ao erro
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Erro desconhecido ao carregar álbum';
+        
+        setError(errorMessage);
         
         // Definir um álbum padrão em caso de erro
         setAlbum({
-          id: params.id,
+          id: params.id || 'album-erro',
           title: 'Álbum não encontrado',
-          description: '',
+          description: errorMessage,
           date_created: new Date().toISOString(),
           files: [],
           can_edit: false,
