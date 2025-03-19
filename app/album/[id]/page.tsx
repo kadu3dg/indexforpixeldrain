@@ -14,10 +14,17 @@ export async function generateStaticParams() {
       .filter(album => album.id && album.id.trim() !== '')
       .map(album => ({ id: album.id }));
     
+    // Log detalhado para depuração
+    console.log('Álbuns gerados para rotas estáticas:', validAlbums);
+    
     // Adicionar um ID padrão se nenhum álbum for encontrado
-    return validAlbums.length > 0 
+    const finalParams = validAlbums.length > 0 
       ? validAlbums 
       : [{ id: 'default-album' }];
+    
+    console.log('Parâmetros finais para rotas estáticas:', finalParams);
+    
+    return finalParams;
   } catch (error) {
     console.error('Erro ao gerar parâmetros estáticos:', error);
     // Retornar um ID padrão em caso de erro
@@ -66,6 +73,9 @@ export default async function AlbumPage({
 }: { 
   params: { id: string } 
 }) {
+  // Log de depuração para verificar os parâmetros recebidos
+  console.log('Parâmetros recebidos na página do álbum:', params);
+
   // Validação mais robusta do ID
   const albumId = params.id?.trim();
   
