@@ -25,6 +25,11 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
   useEffect(() => {
     const loadAlbum = async () => {
       try {
+        // Validar o ID do álbum antes de fazer a requisição
+        if (!params.id || params.id === 'default-album') {
+          throw new Error('ID de álbum inválido');
+        }
+
         console.log('Carregando álbum com ID:', params.id);
         const albumData = await pixeldrainService.getListDetails(params.id);
         console.log('Dados do álbum:', albumData);
@@ -32,6 +37,17 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
       } catch (error) {
         console.error('Erro ao carregar álbum:', error);
         setError(error instanceof Error ? error.message : 'Erro ao carregar álbum');
+        
+        // Definir um álbum padrão em caso de erro
+        setAlbum({
+          id: params.id,
+          title: 'Álbum não encontrado',
+          description: '',
+          date_created: new Date().toISOString(),
+          files: [],
+          can_edit: false,
+          file_count: 0
+        });
       } finally {
         setLoading(false);
       }
@@ -60,13 +76,26 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
 
   // Se o ID do álbum não corresponder a nenhum dos IDs pré-gerados,
   // mostrar uma mensagem de erro amigável
-  if (params.id === 'default-album') {
+  if (params.id === 'default-album' || error) {
     return (
       <main className="min-h-screen p-4" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
         <div className="max-w-6xl mx-auto">
           <Alert severity="warning" sx={{ mb: 2, backgroundColor: '#ffa50033', color: '#ffffff' }}>
-            Este álbum não está disponível no modo offline. Por favor, acesse online para ver o conteúdo.
+            {error || 'Este álbum não está disponível no momento.'}
           </Alert>
+          <Button
+            variant="contained"
+            onClick={handleBack}
+            sx={{
+              backgroundColor: '#333',
+              color: '#fff',
+              '&:hover': {
+                backgroundColor: '#444',
+              },
+            }}
+          >
+            Voltar para o Início
+          </Button>
         </div>
       </main>
     );
@@ -154,12 +183,6 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
             </Button>
           </div>
         </div>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2, backgroundColor: '#ff000033', color: '#ffffff' }}>
-            {error}
-          </Alert>
-        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
