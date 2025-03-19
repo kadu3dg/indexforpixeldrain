@@ -58,22 +58,29 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
       
+      // Clonar a resposta para poder lê-la como texto
+      const clonedResponse = response.clone();
+      
       let errorText;
       try {
         // Tentar ler o corpo como texto primeiro
-        errorText = await response.text();
+        errorText = await clonedResponse.text();
         console.error('[Proxy] Resposta de erro (primeiros 1000 caracteres):', errorText.substring(0, 1000));
         
         // Tentar converter o texto em JSON se possível
         if (errorText.trim().startsWith('{') || errorText.trim().startsWith('[')) {
-          const errorJson = JSON.parse(errorText);
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: `Erro na API: ${response.status} - ${errorJson.error || errorJson.message || response.statusText}` 
-            },
-            { status: response.status }
-          );
+          try {
+            const errorJson = JSON.parse(errorText);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Erro na API: ${response.status} - ${errorJson.error || errorJson.message || response.statusText}` 
+              },
+              { status: response.status }
+            );
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear erro como JSON:', parseError);
+          }
         }
         
         // Se não for JSON, retornar o erro como texto
@@ -97,16 +104,19 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Clonar a resposta antes de processá-la
+    const responseClone = response.clone();
+    
     // Obter os dados da resposta
     let data;
     
     // Salvar a resposta como texto para debug em caso de erro
     let responseText;
     try {
-      responseText = await response.clone().text();
+      responseText = await responseClone.text();
       console.log('[Proxy] Resposta em texto (primeiros 500 caracteres):', responseText.substring(0, 500));
     } catch (e) {
-      console.error('[Proxy] Erro ao clonar resposta para texto:', e);
+      console.error('[Proxy] Erro ao obter texto da resposta:', e);
     }
     
     // Verificar se é JSON ou outro tipo de conteúdo
@@ -120,10 +130,13 @@ export async function GET(request: NextRequest) {
             console.log('[Proxy] JSON parseado do texto salvo');
           } catch (parseError) {
             console.error('[Proxy] Erro ao parsear texto como JSON:', parseError);
-            // Tentar com a resposta original como fallback
-            data = await response.json();
+            return NextResponse.json(
+              { success: false, error: 'Erro ao processar resposta JSON', responseText: responseText.substring(0, 1000) },
+              { status: 500 }
+            );
           }
         } else {
+          // Se não temos o texto, tentar obter JSON diretamente da resposta
           data = await response.json();
         }
         
@@ -131,73 +144,86 @@ export async function GET(request: NextRequest) {
       } catch (error) {
         console.error('[Proxy] Erro ao processar resposta JSON:', error);
         
-        // Se já temos o texto, usamos ele diretamente
-        const textResponse = responseText || await response.text();
-        console.error('[Proxy] Resposta bruta (primeiros 1000 caracteres):', textResponse.substring(0, 1000));
-        
-        if (textResponse.includes('DOCTYPE html') || textResponse.includes('<html')) {
-          // É uma página HTML, provavelmente uma página de erro ou login
+        if (responseText) {
+          // Já temos o texto, usá-lo para mensagem de erro
+          if (responseText.includes('DOCTYPE html') || responseText.includes('<html')) {
+            // É uma página HTML, provavelmente uma página de erro ou login
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: 'A API retornou uma página HTML em vez de JSON. Provavelmente há um problema com a autenticação.',
+                responseText: responseText.substring(0, 1000)
+              },
+              { status: 500 }
+            );
+          }
+          
           return NextResponse.json(
-            { 
-              success: false, 
-              error: 'A API retornou uma página HTML em vez de JSON. Provavelmente há um problema com a autenticação.',
-              responseText: textResponse.substring(0, 1000)
-            },
+            { success: false, error: 'Erro ao processar resposta JSON', responseText: responseText.substring(0, 1000) },
             { status: 500 }
           );
+        } else {
+          // Não temos o texto, tentar obtê-lo agora (isso não deve acontecer)
+          try {
+            const textResponse = await response.text();
+            return NextResponse.json(
+              { success: false, error: 'Erro ao processar resposta JSON', responseText: textResponse.substring(0, 1000) },
+              { status: 500 }
+            );
+          } catch (e) {
+            console.error('[Proxy] Erro ao obter texto da resposta após falha no JSON:', e);
+            return NextResponse.json(
+              { success: false, error: 'Erro ao processar resposta: não foi possível ler o corpo' },
+              { status: 500 }
+            );
+          }
         }
-        
+      }
+    } else if (responseText) {
+      // Não é JSON, mas temos o texto
+      if (responseText.includes('DOCTYPE html') || responseText.includes('<html')) {
+        // É uma página HTML, provavelmente uma página de erro ou login
         return NextResponse.json(
-          { success: false, error: 'Erro ao processar resposta JSON', responseText: textResponse.substring(0, 1000) },
+          { 
+            success: false, 
+            error: 'A API retornou uma página HTML em vez de JSON. Provavelmente há um problema com a autenticação.',
+            responseText: responseText.substring(0, 1000)
+          },
           { status: 500 }
         );
       }
-    } else {
-      // Se não for JSON, tratar como texto ou binário
+      
+      // Tentar parsear o texto como JSON mesmo assim
       try {
-        const textResponse = responseText || await response.text();
-        
-        if (textResponse.includes('DOCTYPE html') || textResponse.includes('<html')) {
-          // É uma página HTML, provavelmente uma página de erro ou login
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: 'A API retornou uma página HTML em vez de JSON. Provavelmente há um problema com a autenticação.',
-              responseText: textResponse.substring(0, 1000)
-            },
-            { status: 500 }
-          );
-        }
-        
-        if (textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) {
-          // Parece ser JSON mesmo que o Content-Type não indique isso
-          try {
-            data = JSON.parse(textResponse);
-            console.log('[Proxy] Conteúdo parseado como JSON apesar do Content-Type');
-          } catch (e) {
-            console.error('[Proxy] Erro ao tentar parsear como JSON:', e);
-            return NextResponse.json({
-              success: false,
-              error: 'Resposta parece ser JSON, mas não pôde ser parseada',
-              responseText: textResponse.substring(0, 1000)
-            }, { status: 500 });
-          }
+        if (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')) {
+          data = JSON.parse(responseText);
+          console.log('[Proxy] Conteúdo parseado como JSON apesar do Content-Type');
         } else {
           // Não é JSON, retornar como texto com sucesso
           return NextResponse.json({
             success: true,
             message: 'Conteúdo não-JSON recebido',
             contentType,
-            text: textResponse.substring(0, 1000) // Limitamos a 1000 caracteres
+            text: responseText.substring(0, 1000) // Limitamos a 1000 caracteres
           });
         }
       } catch (error) {
-        console.error('[Proxy] Erro ao processar resposta de texto:', error);
+        console.error('[Proxy] Erro ao processar resposta de texto como JSON:', error);
         return NextResponse.json(
-          { success: false, error: 'Não foi possível processar a resposta' },
+          { 
+            success: false, 
+            error: 'Resposta não é JSON válido', 
+            text: responseText.substring(0, 1000) 
+          },
           { status: 500 }
         );
       }
+    } else {
+      // Não temos nem JSON nem texto, algo deu muito errado
+      return NextResponse.json(
+        { success: false, error: 'Não foi possível processar a resposta' },
+        { status: 500 }
+      );
     }
     
     // Se chegamos aqui, temos um objeto data válido
@@ -275,12 +301,14 @@ export async function POST(request: NextRequest) {
     // Configurar os headers para a requisição
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
     
     // Adicionar header de autorização se a API key for fornecida
     if (apiKey) {
       const base64Auth = Buffer.from(`:${apiKey}`).toString('base64');
       headers['Authorization'] = `Basic ${base64Auth}`;
+      console.log(`[Proxy] Usando autenticação com chave API: ${apiKey.substring(0, 5)}...`);
     }
     
     // Fazer a requisição para a API do Pixeldrain
@@ -293,27 +321,35 @@ export async function POST(request: NextRequest) {
     // Verificar o tipo de conteúdo da resposta
     const contentType = response.headers.get('content-type') || '';
     console.log(`[Proxy] Content-Type da resposta: ${contentType}`);
+    console.log(`[Proxy] Status da resposta: ${response.status} ${response.statusText}`);
     
     // Se a resposta não for bem-sucedida, retornar o erro
     if (!response.ok) {
       console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
       
+      // Clonar a resposta para poder lê-la como texto
+      const clonedResponse = response.clone();
+      
       let errorText;
       try {
         // Tentar ler o corpo como texto primeiro
-        errorText = await response.text();
-        console.error('[Proxy] Resposta de erro:', errorText);
+        errorText = await clonedResponse.text();
+        console.error('[Proxy] Resposta de erro (primeiros 1000 caracteres):', errorText.substring(0, 1000));
         
         // Tentar converter o texto em JSON se possível
         if (errorText.trim().startsWith('{') || errorText.trim().startsWith('[')) {
-          const errorJson = JSON.parse(errorText);
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: `Erro na API: ${response.status} - ${errorJson.error || errorJson.message || response.statusText}` 
-            },
-            { status: response.status }
-          );
+          try {
+            const errorJson = JSON.parse(errorText);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Erro na API: ${response.status} - ${errorJson.error || errorJson.message || response.statusText}` 
+              },
+              { status: response.status }
+            );
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear erro como JSON:', parseError);
+          }
         }
         
         // Se não for JSON, retornar o erro como texto
@@ -340,42 +376,112 @@ export async function POST(request: NextRequest) {
     // Obter os dados da resposta
     let data;
     
+    // Clonar a resposta para poder processá-la de múltiplas formas
+    const responseClone = response.clone();
+    
+    // Salvar a resposta como texto para debug em caso de erro
+    let responseText;
+    try {
+      responseText = await responseClone.text();
+      console.log('[Proxy] Resposta em texto (primeiros 500 caracteres):', responseText.substring(0, 500));
+    } catch (e) {
+      console.error('[Proxy] Erro ao obter texto da resposta:', e);
+    }
+    
     // Verificar se é JSON ou outro tipo de conteúdo
-    if (contentType.includes('application/json')) {
+    if (contentType.includes('application/json') || 
+       (responseText && (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')))) {
       try {
-        data = await response.json();
+        // Se já temos o texto, parsear diretamente
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText);
+            console.log('[Proxy] JSON parseado do texto salvo');
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear texto como JSON:', parseError);
+            return NextResponse.json(
+              { success: false, error: 'Erro ao processar resposta JSON', responseText: responseText.substring(0, 1000) },
+              { status: 500 }
+            );
+          }
+        } else {
+          // Tentar obter JSON diretamente da resposta original
+          data = await response.json();
+        }
       } catch (error) {
         console.error('[Proxy] Erro ao processar resposta JSON:', error);
-        const textResponse = await response.text();
-        console.error('[Proxy] Resposta bruta:', textResponse.slice(0, 500));
+        
+        if (responseText) {
+          // Já temos o texto, usá-lo para mensagem de erro
+          if (responseText.includes('DOCTYPE html') || responseText.includes('<html')) {
+            // É uma página HTML, provavelmente uma página de erro ou login
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: 'A API retornou uma página HTML em vez de JSON. Provavelmente há um problema com a autenticação.',
+                responseText: responseText.substring(0, 1000)
+              },
+              { status: 500 }
+            );
+          }
+          
+          return NextResponse.json(
+            { success: false, error: 'Erro ao processar resposta JSON', responseText: responseText.substring(0, 1000) },
+            { status: 500 }
+          );
+        } else {
+          // Não temos o texto, tentar obtê-lo agora (isso não deve acontecer)
+          return NextResponse.json(
+            { success: false, error: 'Erro ao processar resposta JSON e não foi possível obter o texto' },
+            { status: 500 }
+          );
+        }
+      }
+    } else if (responseText) {
+      // Não é JSON, mas temos o texto
+      if (responseText.includes('DOCTYPE html') || responseText.includes('<html')) {
+        // É uma página HTML, provavelmente uma página de erro ou login
         return NextResponse.json(
-          { success: false, error: 'Erro ao processar resposta JSON', responseText: textResponse.slice(0, 500) },
+          { 
+            success: false, 
+            error: 'A API retornou uma página HTML em vez de JSON. Provavelmente há um problema com a autenticação.',
+            responseText: responseText.substring(0, 1000)
+          },
           { status: 500 }
         );
       }
-    } else {
-      // Se não for JSON, tratar como texto ou binário
+      
+      // Tentar parsear o texto como JSON mesmo assim
       try {
-        const textResponse = await response.text();
-        if (textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) {
-          // Parece ser JSON mesmo que o Content-Type não indique isso
-          data = JSON.parse(textResponse);
+        if (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')) {
+          data = JSON.parse(responseText);
+          console.log('[Proxy] Texto parseado como JSON apesar do Content-Type');
         } else {
           // Não é JSON, retornar como texto com sucesso
           return NextResponse.json({
             success: true,
             message: 'Conteúdo não-JSON recebido',
             contentType,
-            text: textResponse.slice(0, 1000) // Limitamos a 1000 caracteres
+            text: responseText.substring(0, 1000) // Limitamos a 1000 caracteres
           });
         }
       } catch (error) {
-        console.error('[Proxy] Erro ao processar resposta de texto:', error);
+        console.error('[Proxy] Erro ao processar resposta de texto como JSON:', error);
         return NextResponse.json(
-          { success: false, error: 'Não foi possível processar a resposta' },
+          { 
+            success: false, 
+            error: 'Resposta não é JSON válido', 
+            text: responseText.substring(0, 1000) 
+          },
           { status: 500 }
         );
       }
+    } else {
+      // Não temos JSON nem texto, algo deu muito errado
+      return NextResponse.json(
+        { success: false, error: 'Não foi possível processar a resposta' },
+        { status: 500 }
+      );
     }
     
     // Retornar os dados da API
@@ -424,12 +530,14 @@ export async function PUT(request: NextRequest) {
     // Configurar os headers para a requisição
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
     
     // Adicionar header de autorização se a API key for fornecida
     if (apiKey) {
       const base64Auth = Buffer.from(`:${apiKey}`).toString('base64');
       headers['Authorization'] = `Basic ${base64Auth}`;
+      console.log(`[Proxy] Usando autenticação com chave API: ${apiKey.substring(0, 5)}...`);
     }
     
     // Fazer a requisição para a API do Pixeldrain
@@ -439,27 +547,119 @@ export async function PUT(request: NextRequest) {
       body: JSON.stringify(body),
     });
     
-    // Obter os dados da resposta
-    let data;
-    try {
-      data = await response.json();
-    } catch (error) {
-      console.error('[Proxy] Erro ao processar resposta JSON:', error);
-      return NextResponse.json(
-        { success: false, error: 'Erro ao processar resposta' },
-        { status: 500 }
-      );
-    }
+    // Verificar o tipo de conteúdo da resposta
+    const contentType = response.headers.get('content-type') || '';
+    console.log(`[Proxy] Content-Type da resposta: ${contentType}`);
+    console.log(`[Proxy] Status da resposta: ${response.status} ${response.statusText}`);
     
     // Se a resposta não for bem-sucedida, retornar o erro
     if (!response.ok) {
       console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
+      
+      // Clonar a resposta para evitar erros ao ler o corpo
+      const clonedResponse = response.clone();
+      
+      try {
+        // Tentar ler o corpo como texto primeiro
+        const errorText = await clonedResponse.text();
+        console.error('[Proxy] Resposta de erro (primeiros 500 caracteres):', errorText.substring(0, 500));
+        
+        // Tentar converter o texto em JSON se possível
+        if (errorText.trim().startsWith('{') || errorText.trim().startsWith('[')) {
+          try {
+            const errorJson = JSON.parse(errorText);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Erro na API: ${response.status} - ${errorJson.error || errorJson.message || response.statusText}` 
+              },
+              { status: response.status }
+            );
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear erro como JSON:', parseError);
+          }
+        }
+        
+        // Se não for JSON, retornar o erro como texto
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Erro na API: ${response.status} - ${response.statusText}`,
+            errorDetails: errorText.slice(0, 500)
+          },
+          { status: response.status }
+        );
+      } catch (e) {
+        console.error('[Proxy] Erro ao processar resposta de erro:', e);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Erro na API: ${response.status} - ${response.statusText}` 
+          },
+          { status: response.status }
+        );
+      }
+    }
+    
+    // Clonar a resposta antes de processá-la
+    const responseClone = response.clone();
+    
+    // Salvar a resposta como texto para debug
+    let responseText;
+    try {
+      responseText = await responseClone.text();
+      console.log('[Proxy] Resposta em texto (primeiros 500 caracteres):', responseText.substring(0, 500));
+    } catch (e) {
+      console.error('[Proxy] Erro ao obter texto da resposta:', e);
+    }
+    
+    // Obter os dados da resposta como JSON ou texto
+    let data;
+    
+    if (contentType.includes('application/json') || 
+       (responseText && (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')))) {
+      try {
+        // Se já temos o texto, tentar parseá-lo
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear texto como JSON:', parseError);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: 'Erro ao processar resposta JSON', 
+                responseText: responseText.substring(0, 500) 
+              },
+              { status: 500 }
+            );
+          }
+        } else {
+          // Tentar processar a resposta original
+          data = await response.json();
+        }
+      } catch (error) {
+        console.error('[Proxy] Erro ao processar resposta JSON:', error);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Erro ao processar resposta',
+            details: error instanceof Error ? error.message : 'Erro desconhecido'
+          },
+          { status: 500 }
+        );
+      }
+    } else if (responseText) {
+      // Não é JSON, retornar o texto
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Conteúdo não-JSON recebido',
+        text: responseText.substring(0, 1000) 
+      });
+    } else {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Erro na API: ${response.status} - ${data.error || data.message || response.statusText}` 
-        },
-        { status: response.status }
+        { success: false, error: 'Não foi possível processar a resposta' },
+        { status: 500 }
       );
     }
     
@@ -499,13 +699,14 @@ export async function DELETE(request: NextRequest) {
     
     // Configurar os headers para a requisição
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
     
     // Adicionar header de autorização se a API key for fornecida
     if (apiKey) {
       const base64Auth = Buffer.from(`:${apiKey}`).toString('base64');
       headers['Authorization'] = `Basic ${base64Auth}`;
+      console.log(`[Proxy] Usando autenticação com chave API: ${apiKey.substring(0, 5)}...`);
     }
     
     // Fazer a requisição para a API do Pixeldrain
@@ -514,28 +715,125 @@ export async function DELETE(request: NextRequest) {
       headers,
     });
     
-    // Obter os dados da resposta
-    let data;
-    try {
-      data = await response.json();
-    } catch (error) {
-      console.error('[Proxy] Erro ao processar resposta JSON:', error);
-      return NextResponse.json(
-        { success: false, error: 'Erro ao processar resposta' },
-        { status: 500 }
-      );
-    }
+    // Verificar o tipo de conteúdo da resposta
+    const contentType = response.headers.get('content-type') || '';
+    console.log(`[Proxy] Content-Type da resposta: ${contentType}`);
+    console.log(`[Proxy] Status da resposta: ${response.status} ${response.statusText}`);
     
     // Se a resposta não for bem-sucedida, retornar o erro
     if (!response.ok) {
       console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
+      
+      // Clonar a resposta para evitar erros ao ler o corpo
+      const clonedResponse = response.clone();
+      
+      try {
+        // Tentar ler o corpo como texto primeiro
+        const errorText = await clonedResponse.text();
+        console.error('[Proxy] Resposta de erro (primeiros 500 caracteres):', errorText.substring(0, 500));
+        
+        // Tentar converter o texto em JSON se possível
+        if (errorText.trim().startsWith('{') || errorText.trim().startsWith('[')) {
+          try {
+            const errorJson = JSON.parse(errorText);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: `Erro na API: ${response.status} - ${errorJson.error || errorJson.message || response.statusText}` 
+              },
+              { status: response.status }
+            );
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear erro como JSON:', parseError);
+          }
+        }
+        
+        // Se não for JSON, retornar o erro como texto
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Erro na API: ${response.status} - ${response.statusText}`,
+            errorDetails: errorText.slice(0, 500)
+          },
+          { status: response.status }
+        );
+      } catch (e) {
+        console.error('[Proxy] Erro ao processar resposta de erro:', e);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Erro na API: ${response.status} - ${response.statusText}` 
+          },
+          { status: response.status }
+        );
+      }
+    }
+    
+    // Clonar a resposta antes de processá-la
+    const responseClone = response.clone();
+    
+    // Salvar a resposta como texto para debug
+    let responseText;
+    try {
+      responseText = await responseClone.text();
+      console.log('[Proxy] Resposta em texto (primeiros 500 caracteres):', responseText.substring(0, 500));
+    } catch (e) {
+      console.error('[Proxy] Erro ao obter texto da resposta:', e);
+    }
+    
+    // Obter os dados da resposta como JSON ou texto
+    let data;
+    
+    if (contentType.includes('application/json') || 
+       (responseText && (responseText.trim().startsWith('{') || responseText.trim().startsWith('[')))) {
+      try {
+        // Se já temos o texto, tentar parseá-lo
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao parsear texto como JSON:', parseError);
+            return NextResponse.json(
+              { 
+                success: false, 
+                error: 'Erro ao processar resposta JSON', 
+                responseText: responseText.substring(0, 500) 
+              },
+              { status: 500 }
+            );
+          }
+        } else {
+          // Tentar processar a resposta original
+          data = await response.json();
+        }
+      } catch (error) {
+        console.error('[Proxy] Erro ao processar resposta JSON:', error);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Erro ao processar resposta',
+            details: error instanceof Error ? error.message : 'Erro desconhecido'
+          },
+          { status: 500 }
+        );
+      }
+    } else if (responseText) {
+      // Não é JSON, retornar o texto
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Conteúdo não-JSON recebido',
+        text: responseText.substring(0, 1000) 
+      });
+    } else {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Erro na API: ${response.status} - ${data.error || data.message || response.statusText}` 
-        },
-        { status: response.status }
+        { success: false, error: 'Não foi possível processar a resposta' },
+        { status: 500 }
       );
+    }
+    
+    // Se a resposta está vazia mas o status é ok, consideramos sucesso
+    if (!data && response.ok) {
+      data = { success: true };
     }
     
     // Retornar os dados da API

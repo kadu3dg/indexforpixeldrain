@@ -244,25 +244,53 @@ export class PixeldrainService {
       // Processar a resposta
       let data;
       try {
-        data = await response.json();
-      } catch (error) {
-        console.error('[Proxy] Erro ao processar resposta JSON do proxy:', error);
+        // Clone a resposta antes de tentar ler como JSON
+        const clonedResponse = response.clone();
         
-        // Se a resposta não é JSON, pode ser uma página HTML ou outro formato
-        const textResponse = await response.text();
-        if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html')) {
-          console.error('[Proxy] Resposta contém HTML:', textResponse.substring(0, 500));
-          return {
-            success: false,
-            error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
-            text: textResponse.substring(0, 1000)
-          };
+        try {
+          // Tentar ler a resposta como JSON primeiro
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('[Proxy] Erro ao processar resposta como JSON:', jsonError);
+          
+          // Se falhar, tente ler como texto usando a resposta clonada
+          const textResponse = await clonedResponse.text();
+          
+          if (textResponse.includes('<!DOCTYPE') || textResponse.includes('<html')) {
+            console.error('[Proxy] Resposta contém HTML:', textResponse.substring(0, 500));
+            return {
+              success: false,
+              error: 'A resposta contém HTML em vez de JSON. Possível erro na API.',
+              text: textResponse.substring(0, 1000)
+            };
+          }
+          
+          // Tentar converter o texto para JSON manualmente
+          try {
+            if (textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) {
+              data = JSON.parse(textResponse);
+              console.log('[Proxy] Convertido texto para JSON manualmente');
+            } else {
+              return {
+                success: false,
+                error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.',
+                text: textResponse.substring(0, 500)
+              };
+            }
+          } catch (parseError) {
+            console.error('[Proxy] Erro ao converter texto para JSON:', parseError);
+            return {
+              success: false,
+              error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.',
+              text: textResponse.substring(0, 500)
+            };
+          }
         }
-        
+      } catch (error) {
+        console.error('[Proxy] Erro crítico ao processar resposta do proxy:', error);
         return {
           success: false,
-          error: 'Erro ao processar resposta do proxy. A resposta não está em formato JSON válido.',
-          text: textResponse.substring(0, 500)
+          error: `Erro ao usar proxy: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
         };
       }
       
@@ -271,7 +299,7 @@ export class PixeldrainService {
         console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
         return {
           success: false,
-          error: data.error || `Erro ${response.status}: ${response.statusText}`
+          error: data?.error || `Erro ${response.status}: ${response.statusText}`
         };
       }
       
