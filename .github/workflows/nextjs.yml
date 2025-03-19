@@ -64,6 +64,16 @@ jobs:
           ls -R out/
           echo "Checking for album pages:"
           find out -name "index.html" | grep album
+          echo "Detailed album page structure:"
+          find out/album -type d
+          echo "Album page HTML files:"
+          find out/album -name "index.html"
+      - name: Verify routing
+        run: |
+          echo "Checking generated routes:"
+          cat .next/server/server-reference-manifest.json || echo "No server reference manifest found"
+          echo "Checking static routes:"
+          cat .next/routes-manifest.json || echo "No routes manifest found"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
