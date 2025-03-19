@@ -9,10 +9,18 @@ const StyledCard = styled(Card)(({ theme }: { theme: Theme }) => ({
   margin: theme.spacing(1),
   width: '100%',
   maxWidth: 600,
+  backgroundColor: '#1a1a1a',
+  color: '#ffffff',
+  '& .MuiTypography-root': {
+    color: '#ffffff',
+  },
+  '& .MuiTypography-colorTextSecondary': {
+    color: '#aaaaaa',
+  }
 }));
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState<string>('');
+  const [apiKey, setApiKey] = useState<string>('aa73d120-100e-426e-93ba-c7e1569b0322');
   const [files, setFiles] = useState<PixeldrainFile[]>([]);
   const [albums, setAlbums] = useState<PixeldrainAlbum[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,8 +60,8 @@ export default function Home() {
   }, [apiKey]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4">
-      <h1 className="text-4xl font-bold mb-8">Índice Pixeldrain</h1>
+    <main className="flex min-h-screen flex-col items-center p-4" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+      <h1 className="text-4xl font-bold mb-8 text-white">Índice Pixeldrain</h1>
 
       <Box sx={{ width: '100%', maxWidth: 600, mb: 4 }}>
         <Input
@@ -62,21 +70,22 @@ export default function Home() {
           value={apiKey}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)}
           type="password"
+          sx={{ color: '#ffffff', '& .MuiInput-input': { color: '#ffffff' } }}
         />
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ width: '100%', maxWidth: 600, mb: 2 }}>
+        <Alert severity="error" sx={{ width: '100%', maxWidth: 600, mb: 2, backgroundColor: '#ff000033', color: '#ffffff' }}>
           {error}
         </Alert>
       )}
 
       {loading ? (
-        <CircularProgress />
+        <CircularProgress sx={{ color: '#ffffff' }} />
       ) : (
         <>
           <section className="w-full max-w-3xl">
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ color: '#ffffff' }}>
               Álbuns ({albums.length})
             </Typography>
             {albums.map((album) => (
@@ -100,7 +109,7 @@ export default function Home() {
           </section>
 
           <section className="w-full max-w-3xl mt-8">
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ color: '#ffffff' }}>
               Arquivos ({files.length})
             </Typography>
             {files.map((file) => (

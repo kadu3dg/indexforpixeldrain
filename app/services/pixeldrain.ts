@@ -33,7 +33,9 @@ export class PixeldrainService {
 
   constructor(apiKey: string = '') {
     this.apiKey = apiKey;
-    this.baseUrl = '/api/pixeldrain';
+    this.baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://kadu3dg.github.io/indexforpixeldrain/api/pixeldrain'
+      : '/api/pixeldrain';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
