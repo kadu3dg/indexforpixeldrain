@@ -1,21 +1,33 @@
+"use client";
+
+import { Button } from '@mui/material';
+import { useRouter } from 'next/navigation';
+
 export default function NotFound() {
+  const router = useRouter();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
-        <h1 className="text-4xl font-bold text-red-600 mb-4">404</h1>
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
-          Página não encontrada
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
-          A página que você está procurando não existe ou foi movida.
+    <main className="min-h-screen p-4 flex items-center justify-center" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+      <div className="text-center">
+        <h1 className="text-6xl font-bold mb-4">404</h1>
+        <h2 className="text-2xl font-semibold mb-4">Página não encontrada</h2>
+        <p className="text-gray-400 mb-8">
+          A página que você está procurando não existe ou foi removida.
         </p>
-        <a
-          href="/indexforpixeldrain"
-          className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        <Button
+          variant="contained"
+          onClick={() => router.push('/')}
+          sx={{
+            backgroundColor: '#333',
+            color: '#fff',
+            '&:hover': {
+              backgroundColor: '#444',
+            },
+          }}
         >
-          Voltar para o início
-        </a>
+          Voltar para o Início
+        </Button>
       </div>
-    </div>
+    </main>
   );
 } 

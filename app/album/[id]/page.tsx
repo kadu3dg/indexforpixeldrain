@@ -17,6 +17,13 @@ export async function generateStaticParams() {
   }
 }
 
+// Esta função é necessária para gerar as páginas estáticas
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  return {
+    title: `Álbum ${params.id} - Pixeldrain`,
+  };
+}
+
 export default function AlbumPage({ params }: { params: { id: string } }) {
   return <AlbumPageClient params={params} />;
 } 
