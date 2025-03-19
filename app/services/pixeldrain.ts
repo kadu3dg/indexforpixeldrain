@@ -92,7 +92,33 @@ export class PixeldrainService {
   async getListDetails(listId: string): Promise<PixeldrainAlbum> {
     try {
       const data = await this.fetchWithAuth(`/list/${listId}`);
-      return data;
+      
+      // Garantir que os arquivos tenham todos os campos necessários
+      if (data.files && Array.isArray(data.files)) {
+        data.files = data.files.map((file: Partial<PixeldrainFile>) => ({
+          id: file.id || '',
+          name: file.name || 'Sem nome',
+          size: file.size || 0,
+          views: file.views || 0,
+          downloads: file.downloads || 0,
+          date_upload: file.date_upload || new Date().toISOString(),
+          date_last_view: file.date_last_view || new Date().toISOString(),
+          mime_type: file.mime_type || 'application/octet-stream',
+          hash_sha256: file.hash_sha256 || '',
+          can_edit: file.can_edit || false,
+          description: file.description || ''
+        }));
+      }
+
+      return {
+        id: data.id,
+        title: data.title || 'Sem título',
+        description: data.description || '',
+        date_created: data.date_created || new Date().toISOString(),
+        files: data.files || [],
+        can_edit: data.can_edit || false,
+        file_count: data.files?.length || 0
+      };
     } catch (error) {
       console.error(`Erro ao buscar detalhes do álbum ${listId}:`, error);
       return {
@@ -101,7 +127,8 @@ export class PixeldrainService {
         description: '',
         date_created: new Date().toISOString(),
         files: [],
-        can_edit: false
+        can_edit: false,
+        file_count: 0
       };
     }
   }

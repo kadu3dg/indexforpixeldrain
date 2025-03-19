@@ -1,52 +1,55 @@
-// Página estática para álbuns do Pixeldrain
-// Versão completamente estática para GitHub Pages
+"use client";
 
-interface AlbumPageProps {
-  params: {
-    id: string;
-  };
-}
+import { useState, useEffect } from 'react';
+import { PixeldrainService, PixeldrainAlbum } from '../../services/pixeldrain';
+import AlbumViewer from '../../components/AlbumViewer';
+import { CircularProgress, Alert } from '@mui/material';
 
-// Esta função é necessária para o modo de exportação estática
-export function generateStaticParams() {
-  // Retornamos um array com pelo menos um parâmetro de exemplo para pré-renderização
-  return [
-    { id: 'example-album' }
-  ];
-}
+export default function AlbumPage({ params }: { params: { id: string } }) {
+  const [album, setAlbum] = useState<PixeldrainAlbum | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function AlbumPage({ params }: AlbumPageProps) {
-  const { id } = params;
-  
+  const pixeldrainService = new PixeldrainService();
+
+  useEffect(() => {
+    const loadAlbum = async () => {
+      try {
+        const albumData = await pixeldrainService.getListDetails(params.id);
+        setAlbum(albumData);
+      } catch (error) {
+        console.error('Erro ao carregar álbum:', error);
+        setError(error instanceof Error ? error.message : 'Erro ao carregar álbum');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAlbum();
+  }, [params.id]);
+
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Visualizando Álbum
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            ID do álbum: {id}
-          </p>
-        </header>
+    <main className="min-h-screen p-4" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+      <div className="max-w-6xl mx-auto">
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, backgroundColor: '#ff000033', color: '#ffffff' }}>
+            {error}
+          </Alert>
+        )}
 
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-            Conteúdo do Álbum
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Esta visualização estática será substituída pelo conteúdo dinâmico quando acessada no navegador.
-          </p>
-          <div className="flex justify-center">
-            <a 
-              href="/indexforpixeldrain"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-              Voltar para o Início
-            </a>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <CircularProgress sx={{ color: '#ffffff' }} />
           </div>
-        </div>
+        ) : album ? (
+          <AlbumViewer album={album} />
+        ) : (
+          <div className="text-center text-white">
+            <h1 className="text-2xl font-bold">Álbum não encontrado</h1>
+            <p className="mt-2">O álbum que você está procurando não existe ou foi removido.</p>
+          </div>
+        )}
       </div>
-    </div>
+    </main>
   );
 } 
