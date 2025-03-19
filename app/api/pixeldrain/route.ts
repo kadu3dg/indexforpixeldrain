@@ -112,4 +112,7 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
+
+// Rota removida para suportar exportação estática
+export const dynamic = 'error'; 
