@@ -1,0 +1,268 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #0d1117;
+  color: #e6edf3;
+}
+
+.header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #58a6ff;
+}
+
+.description {
+  font-size: 1.2rem;
+  color: #8b949e;
+}
+
+.apiKeyContainer {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+}
+
+.apiKeyContainer h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #58a6ff;
+}
+
+.inputContainer {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.apiKeyInput {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #30363d;
+  background-color: #0d1117;
+  color: #e6edf3;
+  font-size: 1rem;
+}
+
+.apiKeyInput:focus {
+  border-color: #58a6ff;
+  outline: none;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  border: none;
+  background-color: #238636;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #2ea043;
+}
+
+.apiKeyInfo {
+  font-size: 0.9rem;
+  color: #8b949e;
+  line-height: 1.5;
+}
+
+.sectionTitle {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #58a6ff;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: #8b949e;
+}
+
+.error {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background-color: #3a2434;
+  border: 1px solid #f85149;
+  margin-bottom: 2rem;
+}
+
+.errorIcon {
+  font-size: 2rem;
+}
+
+.possibleSolutions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.possibleSolutions h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #f85149;
+}
+
+.possibleSolutions ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+}
+
+.possibleSolutions code {
+  background-color: rgba(248, 81, 73, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.retryButton {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid #f85149;
+  background-color: transparent;
+  color: #f85149;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retryButton:hover {
+  background-color: rgba(248, 81, 73, 0.1);
+}
+
+.debugInfo {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(248, 81, 73, 0.05);
+  border-radius: 4px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.debugInfo pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #e6edf3;
+}
+
+.noAlbums {
+  text-align: center;
+  padding: 3rem;
+  border-radius: 8px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+}
+
+.noAlbums p {
+  margin: 0.5rem 0;
+  color: #8b949e;
+}
+
+.albumGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.albumCard {
+  padding: 1.5rem;
+  border-radius: 8px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.albumCard:hover {
+  transform: translateY(-5px);
+  border-color: #58a6ff;
+}
+
+.albumTitle {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.3rem;
+  color: #58a6ff;
+}
+
+.albumDescription {
+  color: #8b949e;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.albumMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #8b949e;
+}
+
+.albumLink {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  background-color: #238636;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.albumLink:hover {
+  background-color: #2ea043;
+}
+
+.externalLink {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.visitButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  background-color: #58a6ff;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.visitButton:hover {
+  background-color: #79c0ff;
+}
+
+@media (max-width: 768px) {
+  .albumGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .inputContainer {
+    flex-direction: column;
+  }
+} 
