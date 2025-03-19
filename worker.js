@@ -3,6 +3,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
 };
 
 async function handleRequest(request) {
@@ -14,21 +15,24 @@ async function handleRequest(request) {
   }
 
   try {
-    // Extrair o endpoint da URL original
+    // Extrair o endpoint e apiKey da URL
     const url = new URL(request.url);
-    const endpoint = url.pathname.replace('/proxy/', '');
-    
+    const endpoint = url.searchParams.get('endpoint');
+    const apiKey = url.searchParams.get('apiKey');
+
+    if (!endpoint) {
+      return new Response('Endpoint não especificado', { status: 400 });
+    }
+
     // Construir a URL do Pixeldrain
-    const pixeldrainUrl = `https://pixeldrain.com/api/${endpoint}`;
+    const pixeldrainUrl = new URL(endpoint, 'https://pixeldrain.com/api');
     
     // Copiar os headers originais
     const headers = new Headers(request.headers);
-    
-    // Adicionar a autenticação
-    headers.set('Authorization', 'Basic ' + btoa(':aa73d120-100e-426e-93ba-c7e1569b0322'));
+    headers.set('Authorization', `Basic ${btoa(`:${apiKey}`)}`);
     
     // Fazer a requisição para o Pixeldrain
-    const response = await fetch(pixeldrainUrl, {
+    const response = await fetch(pixeldrainUrl.toString(), {
       method: request.method,
       headers: headers,
       body: request.method !== 'GET' ? request.body : null,
