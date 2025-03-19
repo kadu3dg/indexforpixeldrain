@@ -27,9 +27,7 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, viewMode = 'grid' }) =
       <div className="p-4">
         {selectedFile && (
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-black bg-white p-2 rounded">
-              {selectedFile.name}
-            </h2>
+            {/* Removido o nome do arquivo */}
           </div>
         )}
         <FileViewer file={selectedFile} />
