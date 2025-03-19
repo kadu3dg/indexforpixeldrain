@@ -43,13 +43,16 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
       - name: Install dependencies
         run: npm ci
-      - name: Debug environment
+      - name: Debug environment and dependencies
         run: |
           echo "Node version: $(node -v)"
           echo "NPM version: $(npm -v)"
+          echo "Next.js version: $(npx next --version)"
           echo "Current directory: $(pwd)"
           echo "Repository contents:"
           ls -R
+          echo "Installed dependencies:"
+          npm list
       - name: Build with Next.js
         run: |
           npx next build
@@ -59,6 +62,8 @@ jobs:
         run: |
           echo "Output directory contents:"
           ls -R out/
+          echo "Checking for album pages:"
+          find out -name "index.html" | grep album
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
