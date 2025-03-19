@@ -13,8 +13,7 @@ export interface PixeldrainFile {
   description?: string;
 }
 
-export interface PixeldrainListItem {
-  id: string;
+export interface PixeldrainListItem extends PixeldrainFile {
   description?: string;
 }
 

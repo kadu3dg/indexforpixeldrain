@@ -4,10 +4,9 @@ import FileViewer from './FileViewer';
 
 interface AlbumViewerProps {
   album: PixeldrainAlbum;
-  apiKey?: string;
 }
 
-const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, apiKey }) => {
+const AlbumViewer: React.FC<AlbumViewerProps> = ({ album }) => {
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
   // Verifica se há arquivos no álbum
@@ -20,6 +19,7 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, apiKey }) => {
   }
 
   const selectedFile = album.files[selectedFileIndex];
+  const isVideo = selectedFile.mime_type?.startsWith('video/');
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -39,7 +39,7 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, apiKey }) => {
       </div>
 
       <div className="p-4">
-        <FileViewer file={selectedFile} apiKey={apiKey} />
+        <FileViewer file={selectedFile} />
       </div>
 
       {album.files.length > 1 && (
@@ -53,22 +53,50 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, apiKey }) => {
                   selectedFileIndex === index
                     ? 'border-blue-500'
                     : 'border-transparent'
-                }`}
+                } hover:border-blue-300 transition-colors duration-200`}
                 onClick={() => setSelectedFileIndex(index)}
               >
                 <div className="relative aspect-w-1 aspect-h-1">
-                  <img
-                    src={`https://pixeldrain.com/api/file/${file.id}/thumbnail`}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Se a thumbnail falhar, substituir por um ícone padrão
-                      e.currentTarget.src = getFileIcon(file.mime_type || '');
-                    }}
-                  />
+                  {file.mime_type?.startsWith('video/') ? (
+                    <div className="w-full h-full bg-black flex items-center justify-center">
+                      <img
+                        src={`https://pixeldrain.com/api/file/${file.id}/thumbnail`}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = getFileIcon(file.mime_type || '');
+                        }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg
+                          className="w-12 h-12 text-white opacity-80"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={`https://pixeldrain.com/api/file/${file.id}/thumbnail`}
+                      alt={file.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = getFileIcon(file.mime_type || '');
+                      }}
+                    />
+                  )}
                 </div>
-                <div className="p-1">
+                <div className="p-2 bg-white">
                   <p className="text-xs truncate">{file.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatFileSize(file.size)}
+                  </p>
                 </div>
               </div>
             ))}
@@ -100,6 +128,17 @@ function getFileIcon(mimeType: string): string {
   } else {
     return '/icons/file.svg';
   }
+}
+
+// Função para formatar o tamanho do arquivo
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 export default AlbumViewer; 

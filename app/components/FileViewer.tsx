@@ -4,10 +4,9 @@ import Image from 'next/image';
 
 interface FileViewerProps {
   file: PixeldrainFile;
-  apiKey?: string;
 }
 
-const FileViewer: React.FC<FileViewerProps> = ({ file, apiKey }) => {
+const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

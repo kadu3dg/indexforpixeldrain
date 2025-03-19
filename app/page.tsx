@@ -20,20 +20,14 @@ const StyledCard = styled(Card)(({ theme }: { theme: Theme }) => ({
 }));
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState<string>('aa73d120-100e-426e-93ba-c7e1569b0322');
   const [files, setFiles] = useState<PixeldrainFile[]>([]);
   const [albums, setAlbums] = useState<PixeldrainAlbum[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const pixeldrainService = new PixeldrainService(apiKey);
+  const pixeldrainService = new PixeldrainService();
 
   const loadContent = async () => {
-    if (!apiKey) {
-      setError('Por favor, insira sua chave API do Pixeldrain');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -54,25 +48,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (apiKey) {
-      loadContent();
-    }
-  }, [apiKey]);
+    loadContent();
+  }, []);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
       <h1 className="text-4xl font-bold mb-8 text-white">Índice Pixeldrain</h1>
-
-      <Box sx={{ width: '100%', maxWidth: 600, mb: 4 }}>
-        <Input
-          fullWidth
-          placeholder="Insira sua chave API do Pixeldrain"
-          value={apiKey}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)}
-          type="password"
-          sx={{ color: '#ffffff', '& .MuiInput-input': { color: '#ffffff' } }}
-        />
-      </Box>
 
       {error && (
         <Alert severity="error" sx={{ width: '100%', maxWidth: 600, mb: 2, backgroundColor: '#ff000033', color: '#ffffff' }}>
@@ -101,8 +82,16 @@ export default function Home() {
                     </Typography>
                   )}
                   <Typography variant="body2">
-                    Arquivos: {album.files.length}
+                    Arquivos: {album.files?.length || 0}
                   </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    href={`/album/${album.id}`}
+                    sx={{ mt: 2 }}
+                  >
+                    Ver Álbum
+                  </Button>
                 </CardContent>
               </StyledCard>
             ))}
@@ -122,14 +111,19 @@ export default function Home() {
                   <Typography variant="body2" color="text.secondary">
                     Views: {file.views}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Downloads: {file.downloads}
-                  </Typography>
                   {file.date_upload && (
                     <Typography variant="caption" display="block">
                       Enviado em: {new Date(file.date_upload).toLocaleDateString()}
                     </Typography>
                   )}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    href={`/file/${file.id}`}
+                    sx={{ mt: 2 }}
+                  >
+                    Visualizar
+                  </Button>
                 </CardContent>
               </StyledCard>
             ))}

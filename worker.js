@@ -99,6 +99,26 @@ async function handleRequest(request) {
       });
     }
     
+    // Se for uma requisição para detalhes de um álbum, garantir que os arquivos tenham todos os campos necessários
+    if (endpoint.startsWith('/list/') && !endpoint.includes('/file/')) {
+      if (jsonResponse.files && Array.isArray(jsonResponse.files)) {
+        jsonResponse.files = jsonResponse.files.map(file => {
+          return {
+            ...file,
+            name: file.name || 'Sem nome',
+            size: file.size || 0,
+            views: file.views || 0,
+            downloads: file.downloads || 0,
+            date_upload: file.date_upload || new Date().toISOString(),
+            date_last_view: file.date_last_view || new Date().toISOString(),
+            mime_type: file.mime_type || 'application/octet-stream',
+            hash_sha256: file.hash_sha256 || '',
+            can_edit: file.can_edit || false
+          };
+        });
+      }
+    }
+    
     // Criar uma nova resposta com os headers CORS
     const responseHeaders = new Headers();
     Object.keys(corsHeaders).forEach(key => {
