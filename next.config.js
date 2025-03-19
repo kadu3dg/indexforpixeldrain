@@ -23,20 +23,11 @@ const nextConfig = {
   // Configurações de páginas
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
 
-  // Adicionar configuração de rotas dinâmicas
-  exportPathMap: async function (
-    defaultPathMap,
-    { dev, dir, outDir, distDir, buildId }
-  ) {
-    return {
-      ...defaultPathMap,
-      // Adicionar rotas dinâmicas manualmente se necessário
-      '/album/[id]': { page: '/album/[id]' },
-    };
-  },
-
   // Remover configurações experimentais
-  experimental: undefined,
+  experimental: {
+    // Habilitar suporte para rotas dinâmicas na exportação estática
+    staticPageGenerationTimeout: 60
+  },
 };
 
 module.exports = nextConfig; 
