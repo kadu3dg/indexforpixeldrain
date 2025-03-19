@@ -98,6 +98,6 @@ export default async function AlbumPage({
     return <AlbumPageClient params={{ id: albumId }} />;
   } catch (error) {
     console.error(`Erro ao carregar detalhes do álbum ${albumId}:`, error);
-    notFound();
+    return <div>Álbum não encontrado</div>;
   }
 } 
