@@ -25,21 +25,19 @@ export interface PixeldrainAlbum {
   date_created: string;
   files: PixeldrainListItem[];
   can_edit: boolean;
+  file_count?: number;
 }
 
 export class PixeldrainService {
-  private apiKey: string;
-  private workerUrl: string;
+  private readonly workerUrl: string;
 
-  constructor(apiKey: string = 'aa73d120-100e-426e-93ba-c7e1569b0322') {
-    this.apiKey = apiKey;
+  constructor() {
     this.workerUrl = 'https://pixeldrain-proxy.kadulavinia.workers.dev';
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const url = new URL(this.workerUrl);
     url.searchParams.set('endpoint', endpoint);
-    url.searchParams.set('apiKey', this.apiKey);
 
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/json');
@@ -90,6 +88,31 @@ export class PixeldrainService {
       console.error('Erro ao buscar álbuns:', error);
       return [];
     }
+  }
+
+  async getListDetails(listId: string): Promise<PixeldrainAlbum> {
+    try {
+      const data = await this.fetchWithAuth(`/list/${listId}`);
+      return data;
+    } catch (error) {
+      console.error(`Erro ao buscar detalhes do álbum ${listId}:`, error);
+      return {
+        id: listId,
+        title: 'Erro ao carregar',
+        description: '',
+        date_created: new Date().toISOString(),
+        files: [],
+        can_edit: false
+      };
+    }
+  }
+
+  getFileViewUrl(fileId: string): string {
+    return `https://pixeldrain.com/v/${fileId}`;
+  }
+
+  getFileThumbnailUrl(fileId: string): string {
+    return `https://pixeldrain.com/api/file/${fileId}/thumbnail`;
   }
 
   async createAlbum(title: string, description: string = ''): Promise<PixeldrainAlbum> {

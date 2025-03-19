@@ -10,6 +10,9 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 };
 
+// API key fixa para todos os usuários
+const DEFAULT_API_KEY = 'aa73d120-100e-426e-93ba-c7e1569b0322';
+
 async function handleRequest(request) {
   // Lidar com requisições OPTIONS (preflight)
   if (request.method === 'OPTIONS') {
@@ -19,10 +22,9 @@ async function handleRequest(request) {
   }
 
   try {
-    // Extrair o endpoint e apiKey da URL
+    // Extrair o endpoint da URL
     const url = new URL(request.url);
     const endpoint = url.searchParams.get('endpoint');
-    const apiKey = url.searchParams.get('apiKey');
 
     if (!endpoint) {
       return new Response(JSON.stringify({
@@ -52,7 +54,7 @@ async function handleRequest(request) {
     const headers = new Headers();
     headers.set('Accept', 'application/json');
     headers.set('Content-Type', 'application/json');
-    headers.set('Authorization', `Basic ${btoa(`:${apiKey}`)}`);
+    headers.set('Authorization', `Basic ${btoa(`:${DEFAULT_API_KEY}`)}`);
     
     // Fazer a requisição para o Pixeldrain
     const response = await fetch(pixeldrainUrl, {
