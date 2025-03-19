@@ -5,9 +5,10 @@ import { Card, CardContent, Typography, Grid } from '@mui/material';
 
 interface AlbumViewerProps {
   album: PixeldrainAlbum;
+  viewMode?: 'grid' | 'list';
 }
 
-const AlbumViewer: React.FC<AlbumViewerProps> = ({ album }) => {
+const AlbumViewer: React.FC<AlbumViewerProps> = ({ album, viewMode = 'grid' }) => {
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
   // Verifica se há arquivos no álbum
@@ -24,13 +25,6 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album }) => {
   return (
     <div className="bg-gray-900 rounded-lg shadow-lg overflow-hidden">
       <div className="p-4">
-        {selectedFile && (
-          <div className="mb-4">
-            <Typography variant="h6" className="text-white">
-              {selectedFile.name}
-            </Typography>
-          </div>
-        )}
         <FileViewer file={selectedFile} />
       </div>
 
@@ -39,19 +33,40 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album }) => {
           <Typography variant="h6" className="text-white mb-4">
             Arquivos no Álbum ({album.files.length})
           </Typography>
-          <Grid container spacing={2}>
+          <Grid 
+            container 
+            spacing={2} 
+            className={viewMode === 'list' ? 'flex-col' : ''}
+          >
             {album.files.map((file, index) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={file.id}>
+              <Grid 
+                item 
+                xs={viewMode === 'list' ? 12 : 12} 
+                sm={viewMode === 'list' ? 12 : 6} 
+                md={viewMode === 'list' ? 12 : 4} 
+                lg={viewMode === 'list' ? 12 : 3} 
+                key={file.id}
+              >
                 <Card
                   className={`cursor-pointer transition-all duration-200 ${
                     selectedFileIndex === index
                       ? 'ring-2 ring-blue-500'
                       : 'hover:ring-2 hover:ring-blue-300'
-                  }`}
+                  } ${viewMode === 'list' ? 'flex items-center' : ''}`}
                   onClick={() => setSelectedFileIndex(index)}
-                  sx={{ backgroundColor: '#1a1a1a', height: '100%' }}
+                  sx={{ 
+                    backgroundColor: '#1a1a1a', 
+                    height: '100%',
+                    flexDirection: viewMode === 'list' ? 'row' : 'column'
+                  }}
                 >
-                  <div className="relative aspect-w-16 aspect-h-9">
+                  <div 
+                    className={`relative ${
+                      viewMode === 'list' 
+                        ? 'w-32 h-24 mr-4 flex-shrink-0' 
+                        : 'aspect-w-16 aspect-h-9'
+                    }`}
+                  >
                     {file.mime_type?.startsWith('video/') ? (
                       <div className="w-full h-full bg-black flex items-center justify-center">
                         <img
@@ -87,14 +102,38 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({ album }) => {
                       />
                     )}
                   </div>
-                  <CardContent sx={{ color: '#fff' }}>
-                    <Typography variant="subtitle1" component="h3" className="font-medium truncate">
+                  <CardContent 
+                    sx={{ 
+                      color: '#fff', 
+                      flex: 1, 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    <Typography 
+                      variant="subtitle1" 
+                      component="h3" 
+                      className={`font-medium ${
+                        viewMode === 'list' ? 'text-base' : 'truncate'
+                      }`}
+                    >
                       {file.name}
                     </Typography>
-                    <Typography variant="body2" className="text-gray-400">
+                    <Typography 
+                      variant="body2" 
+                      className={`text-gray-400 ${
+                        viewMode === 'list' ? 'text-sm' : ''
+                      }`}
+                    >
                       {formatFileSize(file.size)}
                     </Typography>
-                    <Typography variant="caption" className="text-gray-500">
+                    <Typography 
+                      variant="caption" 
+                      className={`text-gray-500 ${
+                        viewMode === 'list' ? 'text-xs' : ''
+                      }`}
+                    >
                       {file.views} visualizações
                     </Typography>
                   </CardContent>
