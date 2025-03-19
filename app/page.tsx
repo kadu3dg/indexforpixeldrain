@@ -1,173 +1,160 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PixeldrainService, PixeldrainAlbum } from './services/pixeldrain';
+import Link from 'next/link';
+import styles from './page.module.css';
 
 export default function Home() {
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string>('');
   const [albums, setAlbums] = useState<PixeldrainAlbum[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
-
+  const [loading, setLoading] = useState<boolean>(true);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  
   useEffect(() => {
-    const fetchAlbums = async () => {
-      try {
-        setLoading(true);
-        setError('');
-
-        // Inicializar o serviço com a chave API definida
-        const pixeldrainService = new PixeldrainService();
-        const response = await pixeldrainService.getAlbums();
-        
-        console.log('Resposta completa da API:', response);
-        
-        if (response.success === false) {
-          console.error('Erro ao buscar álbuns:', response.error);
-          setError(`Erro ao conectar com a API do Pixeldrain: ${response.error}`);
-          
-          // Adicionar informações de debug se existirem
-          if (response.text) {
-            console.error('Detalhes da resposta HTML:', response.text);
-            setDebugInfo(response.text.substring(0, 500) + '...');
-          } else if (response.errorDetails) {
-            console.error('Detalhes do erro:', response.errorDetails);
-            setDebugInfo(response.errorDetails);
-          }
-          
-          setAlbums([]);
-        } else if (response.albums) {
-          console.log('Álbuns encontrados:', response.albums);
-          setAlbums(response.albums);
-          setError('');
-          setDebugInfo(null);
-        } else {
-          console.log('Nenhum álbum encontrado na resposta:', response);
-          setAlbums([]);
-          setError('');
-          setDebugInfo(null);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar álbuns:', err);
-        setError(`Erro inesperado: ${err instanceof Error ? err.message : String(err)}`);
-        setAlbums([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAlbums();
+    // Tentar carregar a API key do localStorage
+    const savedApiKey = localStorage.getItem('pixeldrain_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+    
+    // Carregar álbuns
+    loadAlbums(savedApiKey || undefined);
   }, []);
-
+  
+  const loadAlbums = async (key?: string) => {
+    setLoading(true);
+    setApiError(null);
+    setDebugInfo(null);
+    
+    try {
+      // Criar uma instância do PixeldrainService com a API key (se disponível)
+      const pixeldrainService = new PixeldrainService(key);
+      
+      // Buscar os álbuns
+      console.log('Buscando álbuns...');
+      const response = await pixeldrainService.getAlbums();
+      console.log('Resposta da API:', response);
+      
+      if (response.success === false) {
+        setApiError(`Erro ao conectar com a API do Pixeldrain: ${response.error}`);
+        setDebugInfo(response);
+        setAlbums([]);
+      } else {
+        setAlbums(response.albums || []);
+        if (response.albums?.length === 0) {
+          console.log('Nenhum álbum encontrado');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar álbuns:', error);
+      setApiError(`Erro ao conectar com a API do Pixeldrain: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      setDebugInfo({ error: error instanceof Error ? error.toString() : JSON.stringify(error) });
+      setAlbums([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setApiKey(e.target.value);
+  };
+  
+  const saveApiKey = () => {
+    localStorage.setItem('pixeldrain_api_key', apiKey);
+    loadAlbums(apiKey);
+  };
+  
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-2">Pixeldrain Album Manager</h1>
-        <p className="text-gray-400 mb-8">Uma interface web para gerenciar seus álbuns no Pixeldrain</p>
-        
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold">Seus Álbuns</h2>
-          <a 
-            href="https://pixeldrain.com/u/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition-colors"
-          >
-            Visitar Pixeldrain
-          </a>
+    <main className={styles.main}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Pixeldrain Album Manager</h1>
+        <p className={styles.description}>Uma interface web para gerenciar seus álbuns no Pixeldrain</p>
+      </div>
+      
+      <div className={styles.apiKeyContainer}>
+        <h2>API Key do Pixeldrain</h2>
+        <div className={styles.inputContainer}>
+          <input 
+            type="text"
+            value={apiKey}
+            onChange={handleApiKeyChange}
+            placeholder="Insira sua API key do Pixeldrain"
+            className={styles.apiKeyInput}
+          />
+          <button onClick={saveApiKey} className={styles.button}>
+            Salvar e Carregar
+          </button>
         </div>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p className="flex items-center mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {error}
-            </p>
-            <div className="text-sm border-t border-red-200 pt-2 mt-2">
-              <p className="font-semibold mb-1">Possíveis soluções:</p>
-              <ul className="list-disc pl-5 mb-3">
-                <li>Verifique se a chave API está correta em <code className="bg-red-50 px-1 rounded">app/services/pixeldrain.ts</code></li>
+        <p className={styles.apiKeyInfo}>
+          A API key deve estar no formato UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.<br />
+          Você pode encontrar sua API key nas configurações da sua conta no site oficial do Pixeldrain.
+        </p>
+      </div>
+      
+      <h2 className={styles.sectionTitle}>Seus Álbuns</h2>
+      
+      {loading ? (
+        <div className={styles.loading}>Carregando álbuns...</div>
+      ) : apiError ? (
+        <div className={styles.error}>
+          <div className={styles.errorIcon}>⚠️</div>
+          <div>
+            <strong>{apiError}</strong>
+            <div className={styles.possibleSolutions}>
+              <h3>Possíveis soluções:</h3>
+              <ul>
+                <li>Verifique se a chave API está correta em <code>app/services/pixeldrain.ts</code></li>
                 <li>A API do Pixeldrain pode estar temporariamente indisponível. Tente novamente mais tarde.</li>
                 <li>Verifique sua conexão com a internet.</li>
+                <li>Certifique-se de que a API key tem o formato adequado (UUID).</li>
+                <li>O servidor do Pixeldrain pode estar rejeitando solicitações. Verifique se há restrições ou limites de uso.</li>
               </ul>
-              <button 
-                onClick={() => window.location.reload()}
-                className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm transition-colors"
-              >
+              <button onClick={() => loadAlbums(apiKey)} className={styles.retryButton}>
                 Tentar novamente
               </button>
             </div>
             
-            {/* Seção de debug com detalhes técnicos, se disponíveis */}
             {debugInfo && (
-              <div className="mt-4 pt-3 border-t border-red-200">
-                <details className="text-xs">
-                  <summary className="cursor-pointer font-semibold mb-2">Informações técnicas para debug</summary>
-                  <div className="bg-red-50 p-2 rounded overflow-auto max-h-40">
-                    <pre>{debugInfo}</pre>
-                  </div>
-                </details>
+              <div className={styles.debugInfo}>
+                <h3>Informações de depuração:</h3>
+                <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
               </div>
             )}
           </div>
-        )}
-        
-        {loading ? (
-          <div className="flex justify-center items-center h-48">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
-          <>
-            {albums.length === 0 && !error ? (
-              <div className="bg-gray-800 rounded-lg p-6 text-center">
-                <p className="text-lg mb-3">Nenhum álbum encontrado. Esta conta não possui álbuns no Pixeldrain.</p>
-                <a 
-                  href="https://pixeldrain.com/u/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline"
-                >
-                  Criar álbuns no Pixeldrain
-                </a>
+        </div>
+      ) : albums.length === 0 ? (
+        <div className={styles.noAlbums}>
+          <p>Nenhum álbum encontrado na sua conta.</p>
+          <p>Você pode criar álbuns no site oficial do Pixeldrain.</p>
+        </div>
+      ) : (
+        <div className={styles.albumGrid}>
+          {albums.map((album) => (
+            <div key={album.id} className={styles.albumCard}>
+              <h3 className={styles.albumTitle}>{album.title}</h3>
+              <p className={styles.albumDescription}>
+                {album.description || 'Sem descrição'}
+              </p>
+              <div className={styles.albumMeta}>
+                <span>ID: {album.id}</span>
+                <span>Criado em: {new Date(album.date_created).toLocaleDateString()}</span>
+                <span>Arquivos: {album.file_count || 0}</span>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {albums.map((album) => (
-                  <div key={album.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition">
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white truncate">
-                        {album.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {new Date(album.date_created).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 line-clamp-2">
-                        {album.description || "Sem descrição"}
-                      </p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-2 py-1 rounded">
-                          {album.file_count || 0} arquivo(s)
-                        </span>
-                        <a 
-                          href={`/indexforpixeldrain/album/${album.id}`}
-                          className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                        >
-                          Ver Álbum
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+              <Link href={`/album/${album.id}`} className={styles.albumLink}>
+                Ver Detalhes
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
       
-      <footer className="mt-12 py-4 border-t border-gray-800 text-center text-gray-500 text-sm">
-        © 2025 Pixeldrain Album Manager
-      </footer>
-    </div>
+      <div className={styles.externalLink}>
+        <a href="https://pixeldrain.com" target="_blank" rel="noopener noreferrer" className={styles.visitButton}>
+          Visitar Pixeldrain
+        </a>
+      </div>
+    </main>
   );
 } 

@@ -30,8 +30,8 @@ export class PixeldrainService {
     if (apiKey && apiKey.trim().length > 0) {
       this.apiKey = apiKey.trim();
     } else {
-      // A chave default está definida aqui
-      this.apiKey = 'a79a8e71-2813-4295-8617-bf9a23830060';
+      // A chave default está definida aqui - usando uma key de teste
+      this.apiKey = '739b08f7-f10e-4be0-88d1-dfffe6c0fa5f';
     }
     
     console.log('PixeldrainService inicializado com a chave: ' + 
@@ -205,7 +205,7 @@ export class PixeldrainService {
         : `/${endpoint}`;
 
       // Sempre usar o proxy para evitar problemas de CORS
-      this.useProxy = true;
+      console.log(`[Auth] Usando proxy para requisição com Basic Auth à API do Pixeldrain: ${path}`);
       return this.fetchWithProxy(path, options);
     } catch (error) {
       console.error('Erro na requisição:', error);
@@ -240,6 +240,14 @@ export class PixeldrainService {
       
       // Fazer a requisição para o proxy
       const response = await fetch(proxyUrl.toString(), fetchOptions);
+      
+      // Verificar status da resposta
+      if (!response.ok) {
+        const statusText = response.statusText || `Erro ${response.status}`;
+        console.error(`[Proxy] Resposta com erro: ${response.status} - ${statusText}`);
+      } else {
+        console.log(`[Proxy] Resposta bem-sucedida: ${response.status}`);
+      }
       
       // Processar a resposta
       let data;
@@ -294,13 +302,10 @@ export class PixeldrainService {
         };
       }
       
-      // Verificar se houve erro na requisição
-      if (!response.ok) {
-        console.error(`[Proxy] Erro na requisição: ${response.status} - ${response.statusText}`);
-        return {
-          success: false,
-          error: data?.error || `Erro ${response.status}: ${response.statusText}`
-        };
+      // Verificar se houve erro na requisição que não resultou em status HTTP de erro
+      if (data && data.success === false) {
+        console.error(`[Proxy] Erro na resposta da API:`, data.error || 'Erro desconhecido');
+        return data;
       }
       
       return data;
