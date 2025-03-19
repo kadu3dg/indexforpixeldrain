@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Adicionar a configuração para tornar a rota dinâmica
+export const dynamic = 'force-dynamic';
+
 // Função para lidar com erros de forma consistente
 function handleError(error: unknown, message: string = 'Erro no proxy da API do Pixeldrain') {
   console.error(`[Proxy Error] ${message}:`, error);
