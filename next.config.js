@@ -4,7 +4,7 @@ const nextConfig = {
   output: 'export',
   
   // Configurando o caminho base para o GitHub Pages
-  basePath: process.env.NODE_ENV === 'production' ? '/indexforpixeldrain' : '',
+  basePath: '/indexforpixeldrain',
   
   // Configurações de imagens
   images: {
@@ -22,6 +22,18 @@ const nextConfig = {
 
   // Configurações de páginas
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+
+  // Adicionar configuração de rotas dinâmicas
+  exportPathMap: async function (
+    defaultPathMap,
+    { dev, dir, outDir, distDir, buildId }
+  ) {
+    return {
+      ...defaultPathMap,
+      // Adicionar rotas dinâmicas manualmente se necessário
+      '/album/[id]': { page: '/album/[id]' },
+    };
+  },
 
   // Remover configurações experimentais
   experimental: undefined,
