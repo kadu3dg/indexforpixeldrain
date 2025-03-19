@@ -22,6 +22,9 @@ const nextConfig = {
 
   // Configurações de páginas
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+
+  // Remover configurações experimentais
+  experimental: undefined,
 };
 
 module.exports = nextConfig; 
