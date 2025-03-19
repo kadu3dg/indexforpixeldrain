@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // Removendo output: 'export' para permitir rotas de API dinâmicas
+  // output: 'export',
   basePath: process.env.NODE_ENV === 'production' ? '/indexforpixeldrain' : '',
   
   // Configurações de imagens no nível correto
