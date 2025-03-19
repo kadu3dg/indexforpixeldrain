@@ -7,7 +7,7 @@ import styles from './page.module.css';
 
 export default function Home() {
   const [apiError, setApiError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string>('');
+  const [apiKey, setApiKey] = useState<string>('aa73d120-100e-426e-93ba-c7e1569b0322');
   const [albums, setAlbums] = useState<PixeldrainAlbum[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -17,10 +17,13 @@ export default function Home() {
     const savedApiKey = localStorage.getItem('pixeldrain_api_key');
     if (savedApiKey) {
       setApiKey(savedApiKey);
+    } else {
+      // Se não existir no localStorage, usar a chave fornecida e salvá-la
+      localStorage.setItem('pixeldrain_api_key', apiKey);
     }
     
     // Carregar álbuns
-    loadAlbums(savedApiKey || undefined);
+    loadAlbums(savedApiKey || apiKey);
   }, []);
   
   const loadAlbums = async (key?: string) => {
