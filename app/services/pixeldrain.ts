@@ -43,7 +43,7 @@ export class PixeldrainService {
   async getFiles() {
     try {
       // Usar a API real do Pixeldrain
-      const response = await this.fetchWithAuth('/user/files');
+      const response = await this.fetchWithAuth('/file');
       console.log('Resposta da API de arquivos:', response);
       
       // Verificar se a resposta foi bem-sucedida
@@ -73,8 +73,8 @@ export class PixeldrainService {
       console.log('Tentando buscar álbuns com a chave API:', 
         this.apiKey.substring(0, 5) + '...' + this.apiKey.substring(this.apiKey.length - 5));
       
-      // A rota correta para buscar listas
-      const response = await this.fetchWithAuth('/user/files');
+      // Corrigido: A rota correta para buscar listas
+      const response = await this.fetchWithAuth('/file');
       console.log('Resposta da API de álbuns:', response);
       
       // Verificar se a resposta contém erro
@@ -333,7 +333,7 @@ export class PixeldrainService {
   async listFiles(): Promise<{ files: PixeldrainFile[]; albums: PixeldrainAlbum[] }> {
     try {
       // Usar as rotas de API internas do Next.js
-      const filesResponse = await this.fetchWithAuth('/user/files');
+      const filesResponse = await this.fetchWithAuth('/file');
       
       console.log('Resposta da API de arquivos:', filesResponse);
       
