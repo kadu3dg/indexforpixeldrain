@@ -15,6 +15,7 @@ export interface PixeldrainAlbum {
   date_created: string;
   file_count?: number;
   files?: PixeldrainFile[];
+  count?: number; // Campo adicional retornado pela API
 }
 
 export class PixeldrainService {
@@ -153,8 +154,8 @@ export class PixeldrainService {
         };
       }
       
-      // Usar a API real do Pixeldrain
-      const response = await this.fetchWithAuth(`/album/${albumId}`);
+      // Usar a API real do Pixeldrain - a rota para listas é /list/{id}
+      const response = await this.fetchWithAuth(`/list/${albumId}`);
       console.log(`Resposta da API para o álbum ${albumId}:`, response);
       
       // Verificar se a resposta contém erro
@@ -324,7 +325,7 @@ export class PixeldrainService {
     try {
       // Usar as rotas de API internas do Next.js
       const filesResponse = await this.fetchWithAuth('/user/files');
-      const albumsResponse = await this.fetchWithAuth('/user/albums');
+      const albumsResponse = await this.fetchWithAuth('/user/lists');
       
       console.log('Resposta da API de arquivos:', filesResponse);
       console.log('Resposta da API de álbuns:', albumsResponse);
@@ -359,7 +360,7 @@ export class PixeldrainService {
 
   async getAlbum(albumId: string): Promise<PixeldrainAlbum> {
     try {
-      const response = await this.fetchWithAuth(`/album/${albumId}`);
+      const response = await this.fetchWithAuth(`/list/${albumId}`);
       return response;
     } catch (error) {
       console.error(`Erro ao obter álbum ${albumId}:`, error);
