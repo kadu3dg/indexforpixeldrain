@@ -22,11 +22,23 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
 
   const pixeldrainService = new PixeldrainService();
 
+  // Função de log de diagnóstico
+  const logDiagnostic = (message: string, data?: any) => {
+    console.log(`[AlbumPageClient Diagnóstico] ${message}`, data || '');
+  };
+
+  // Função de log de erro
+  const logError = (message: string, error?: any) => {
+    console.error(`[AlbumPageClient Erro] ${message}`, error || '');
+  };
+
   useEffect(() => {
     const loadAlbum = async () => {
       try {
         // Validação mais robusta do ID
         const albumId = params.id?.trim();
+        
+        logDiagnostic('Iniciando carregamento do álbum', { albumId });
         
         if (!albumId || 
             albumId === '' || 
@@ -35,12 +47,25 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
           throw new Error(`ID de álbum inválido: "${albumId}"`);
         }
 
-        console.log('Carregando álbum com ID:', albumId);
+        // Verificar disponibilidade do álbum antes de carregar
+        const isAvailable = await pixeldrainService.checkAlbumAvailability(albumId);
+        
+        if (!isAvailable) {
+          throw new Error(`Álbum ${albumId} não está disponível`);
+        }
+
+        logDiagnostic('Carregando detalhes do álbum');
         const albumData = await pixeldrainService.getListDetails(albumId);
-        console.log('Dados do álbum:', albumData);
+        
+        logDiagnostic('Dados do álbum carregados', {
+          albumId: albumData.id,
+          title: albumData.title,
+          fileCount: albumData.files.length
+        });
+
         setAlbum(albumData);
       } catch (error) {
-        console.error('Erro ao carregar álbum:', error);
+        logError('Erro ao carregar álbum', error);
         
         // Adicionar mais detalhes ao erro
         const errorMessage = error instanceof Error 
@@ -61,6 +86,7 @@ export default function AlbumPageClient({ params }: AlbumPageClientProps) {
         });
       } finally {
         setLoading(false);
+        logDiagnostic('Carregamento do álbum finalizado');
       }
     };
 

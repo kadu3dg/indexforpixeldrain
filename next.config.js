@@ -45,10 +45,16 @@ const nextConfig = {
   // Configurações de proxy
   async rewrites() {
     return [
+      // Rotas para álbuns
       {
         source: '/proxy/pixeldrain/list/:id',
         destination: 'https://pixeldrain.com/api/list/:id'
       },
+      {
+        source: '/proxy/pixeldrain/list',
+        destination: 'https://pixeldrain.com/api/list'
+      },
+      // Rotas para arquivos
       {
         source: '/proxy/pixeldrain/file/:id',
         destination: 'https://pixeldrain.com/api/file/:id'
@@ -63,6 +69,7 @@ const nextConfig = {
   // Configurações de CORS
   async headers() {
     return [
+      // Configurações para rotas de proxy do Pixeldrain
       {
         source: '/proxy/pixeldrain/:path*',
         headers: [
@@ -72,9 +79,13 @@ const nextConfig = {
           { 
             key: 'Access-Control-Allow-Headers', 
             value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-          }
+          },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' }
         ]
       },
+      // Configurações para imagens do Next.js
       {
         source: '/_next/image/:path*',
         headers: [
