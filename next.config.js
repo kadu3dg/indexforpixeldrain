@@ -42,10 +42,29 @@ const nextConfig = {
 
   reactStrictMode: true,
 
+  // Configurações de proxy
+  async rewrites() {
+    return [
+      {
+        source: '/proxy/pixeldrain/list/:id',
+        destination: 'https://pixeldrain.com/api/list/:id'
+      },
+      {
+        source: '/proxy/pixeldrain/file/:id',
+        destination: 'https://pixeldrain.com/api/file/:id'
+      },
+      {
+        source: '/proxy/pixeldrain/file/:id/thumbnail',
+        destination: 'https://pixeldrain.com/api/file/:id/thumbnail'
+      }
+    ];
+  },
+
+  // Configurações de CORS
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: '/proxy/pixeldrain/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
           { key: 'Access-Control-Allow-Origin', value: '*' },
@@ -62,15 +81,6 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET' }
         ]
-      }
-    ];
-  },
-
-  async rewrites() {
-    return [
-      {
-        source: '/proxy/pixeldrain/:path*',
-        destination: 'https://pixeldrain.com/api/:path*'
       }
     ];
   }

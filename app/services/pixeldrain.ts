@@ -24,43 +24,51 @@ export interface PixeldrainAlbum {
   title: string;
   description: string;
   date_created: string;
-  files: PixeldrainListItem[];
+  files: PixeldrainFile[];
   can_edit: boolean;
   file_count?: number;
 }
 
 export class PixeldrainService {
-  private baseUrl = '/proxy/pixeldrain';
+  private baseUrl = process.env.NEXT_PUBLIC_PIXELDRAIN_PROXY || '/proxy/pixeldrain';
+  private timeout = 10000; // 10 segundos de timeout
 
-  // Método genérico para tratamento de erros
-  private handleError(error: AxiosError, context: string) {
+  // Método de log detalhado
+  private logError(context: string, error: any) {
     console.error(`[PixeldrainService Error] ${context}`, {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
+      errorType: error?.constructor?.name,
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data,
+      url: error?.config?.url,
+      method: error?.config?.method
     });
-
-    // Mapeamento de erros específicos
-    switch (error.response?.status) {
-      case 404:
-        throw new Error(`Recurso não encontrado: ${context}`);
-      case 403:
-        throw new Error(`Acesso negado: ${context}`);
-      case 500:
-        throw new Error(`Erro interno do servidor: ${context}`);
-      default:
-        throw new Error(`Erro desconhecido ao ${context}: ${error.message}`);
-    }
   }
 
-  // Método para buscar detalhes de um álbum
+  // Método para buscar detalhes de um álbum com diagnóstico detalhado
   async getListDetails(albumId: string): Promise<PixeldrainAlbum> {
+    console.log(`[Diagnóstico] Tentando carregar álbum: ${albumId}`);
+    console.log(`[Diagnóstico] URL base: ${this.baseUrl}`);
+
     try {
-      const response = await axios.get(`${this.baseUrl}/list/${albumId}`);
+      const response = await axios.get(`${this.baseUrl}/list/${albumId}`, {
+        timeout: this.timeout,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       
+      console.log('[Diagnóstico] Resposta do álbum recebida:', {
+        status: response.status,
+        dataReceived: !!response.data,
+        fileCount: response.data?.files?.length || 0
+      });
+
       // Validação adicional dos dados
       if (!response.data || !response.data.files) {
-        throw new Error('Dados do álbum inválidos');
+        throw new Error('Dados do álbum inválidos ou vazios');
       }
 
       // Mapear e validar arquivos
@@ -69,18 +77,43 @@ export class PixeldrainService {
         name: file.name || 'Arquivo sem nome',
         size: file.size || 0,
         mime_type: file.mime_type || '',
-        views: file.views || 0
+        views: file.views || 0,
+        downloads: file.downloads || 0,
+        date_upload: file.date_upload || new Date().toISOString(),
+        date_last_view: file.date_last_view || new Date().toISOString(),
+        hash_sha256: file.hash_sha256 || '',
+        can_edit: file.can_edit || false,
+        description: file.description || ''
       }));
 
       return {
         ...response.data,
-        files: validFiles
+        files: validFiles,
+        file_count: validFiles.length
       };
     } catch (error) {
+      this.logError('Erro ao buscar detalhes do álbum', error);
+
+      // Tratamento específico para diferentes tipos de erros
       if (axios.isAxiosError(error)) {
-        this.handleError(error, 'buscar detalhes do álbum');
+        if (error.response) {
+          // O servidor respondeu com um status de erro
+          switch (error.response.status) {
+            case 404:
+              throw new Error(`Álbum ${albumId} não encontrado`);
+            case 403:
+              throw new Error(`Acesso negado ao álbum ${albumId}`);
+            case 500:
+              throw new Error(`Erro interno do servidor ao buscar álbum ${albumId}`);
+          }
+        } else if (error.request) {
+          // A requisição foi feita, mas nenhuma resposta foi recebida
+          throw new Error(`Sem resposta do servidor ao buscar álbum ${albumId}`);
+        }
       }
-      throw error;
+
+      // Erro genérico
+      throw new Error(`Falha ao carregar álbum ${albumId}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   }
 
@@ -222,5 +255,27 @@ export class PixeldrainService {
     await this.fetchWithAuth(`/list/${albumId}`, {
       method: 'DELETE'
     });
+  }
+
+  // Método para verificar disponibilidade do álbum com mais diagnóstico
+  async checkAlbumAvailability(albumId: string): Promise<boolean> {
+    console.log(`[Diagnóstico] Verificando disponibilidade do álbum: ${albumId}`);
+    
+    try {
+      const response = await axios.head(`${this.baseUrl}/list/${albumId}`, {
+        timeout: this.timeout,
+        validateStatus: (status) => status === 200 || status === 404
+      });
+
+      console.log('[Diagnóstico] Status da verificação de disponibilidade:', {
+        status: response.status,
+        headers: response.headers
+      });
+
+      return response.status === 200;
+    } catch (error) {
+      this.logError('Erro ao verificar disponibilidade do álbum', error);
+      return false;
+    }
   }
 } 
