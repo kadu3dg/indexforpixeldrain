@@ -3,8 +3,8 @@ const nextConfig = {
   // Habilitando exportação estática
   output: 'export',
   
-  // Configurando o caminho base para o GitHub Pages
-  basePath: '/indexforpixeldrain',
+  // Remover caminho base específico
+  // basePath: '/indexforpixeldrain',
   
   // Configurações de imagens
   images: {
@@ -46,6 +46,10 @@ const nextConfig = {
   async rewrites() {
     return [
       // Rotas para álbuns
+      {
+        source: '/album/:id',
+        destination: '/album/[id]/page.html'
+      },
       {
         source: '/proxy/pixeldrain/list/:id',
         destination: 'https://pixeldrain.com/api/list/:id'

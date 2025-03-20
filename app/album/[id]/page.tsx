@@ -8,12 +8,12 @@ export async function generateStaticParams() {
   // Buscar todos os IDs de álbuns disponíveis
   const pixeldrainService = new PixeldrainService();
   try {
-    const albums = await pixeldrainService.getUserLists();
+    const albums = await pixeldrainService.getAllAlbums();
     
     // Filtrar IDs inválidos e adicionar um ID padrão
     const validAlbums = albums
-      .filter(album => album.id && album.id.trim() !== '')
-      .map(album => ({ id: album.id }));
+      .filter(albumId => albumId && albumId.trim() !== '')
+      .map(albumId => ({ id: albumId }));
     
     // Log detalhado para depuração
     console.log('Álbuns gerados para rotas estáticas:', validAlbums);
@@ -90,6 +90,15 @@ export default async function AlbumPage({
   // Adicionar tratamento de erro para álbuns não encontrados
   try {
     const pixeldrainService = new PixeldrainService();
+    
+    // Verificar disponibilidade do álbum
+    const isAvailable = await pixeldrainService.checkAlbumAvailability(albumId);
+    
+    if (!isAvailable) {
+      console.warn(`Álbum ${albumId} não está disponível`);
+      return <div>Álbum não disponível</div>;
+    }
+
     const albumDetails = await pixeldrainService.getListDetails(albumId);
     
     // Log de depuração para verificar os detalhes do álbum
