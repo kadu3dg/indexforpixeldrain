@@ -1,3 +1,5 @@
+import axios, { AxiosError } from 'axios';
+
 export interface PixeldrainFile {
   id: string;
   name: string;
@@ -28,14 +30,89 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private readonly workerUrl: string;
+  private baseUrl = '/proxy/pixeldrain';
 
-  constructor() {
-    this.workerUrl = 'https://pixeldrain-proxy.kadulavinia.workers.dev';
+  // Método genérico para tratamento de erros
+  private handleError(error: AxiosError, context: string) {
+    console.error(`[PixeldrainService Error] ${context}`, {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+
+    // Mapeamento de erros específicos
+    switch (error.response?.status) {
+      case 404:
+        throw new Error(`Recurso não encontrado: ${context}`);
+      case 403:
+        throw new Error(`Acesso negado: ${context}`);
+      case 500:
+        throw new Error(`Erro interno do servidor: ${context}`);
+      default:
+        throw new Error(`Erro desconhecido ao ${context}: ${error.message}`);
+    }
+  }
+
+  // Método para buscar detalhes de um álbum
+  async getListDetails(albumId: string): Promise<PixeldrainAlbum> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/list/${albumId}`);
+      
+      // Validação adicional dos dados
+      if (!response.data || !response.data.files) {
+        throw new Error('Dados do álbum inválidos');
+      }
+
+      // Mapear e validar arquivos
+      const validFiles = response.data.files.map((file: any) => ({
+        id: file.id || '',
+        name: file.name || 'Arquivo sem nome',
+        size: file.size || 0,
+        mime_type: file.mime_type || '',
+        views: file.views || 0
+      }));
+
+      return {
+        ...response.data,
+        files: validFiles
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        this.handleError(error, 'buscar detalhes do álbum');
+      }
+      throw error;
+    }
+  }
+
+  // Método para buscar todos os álbuns disponíveis
+  async getAllAlbums(): Promise<string[]> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/list`);
+      return response.data?.lists || [];
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        this.handleError(error, 'buscar lista de álbuns');
+      }
+      throw error;
+    }
+  }
+
+  // Método para verificar a disponibilidade de um arquivo
+  async checkFileAvailability(fileId: string): Promise<boolean> {
+    try {
+      const response = await axios.head(`${this.baseUrl}/file/${fileId}`);
+      return response.status === 200;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        // Log do erro, mas não lança exceção
+        console.warn(`Arquivo ${fileId} não disponível`, error.message);
+      }
+      return false;
+    }
   }
 
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const url = new URL(this.workerUrl);
+    const url = new URL(this.baseUrl);
     url.searchParams.set('endpoint', endpoint);
 
     const headers = new Headers(options.headers);
@@ -107,50 +184,6 @@ export class PixeldrainService {
     } catch (error) {
       console.error('Erro ao buscar álbuns:', error);
       return [];
-    }
-  }
-
-  async getListDetails(listId: string): Promise<PixeldrainAlbum> {
-    try {
-      const data = await this.fetchWithAuth(`/list/${listId}`);
-      
-      // Garantir que os arquivos tenham todos os campos necessários
-      if (data.files && Array.isArray(data.files)) {
-        data.files = data.files.map((file: Partial<PixeldrainFile>) => ({
-          id: file.id || '',
-          name: file.name || 'Sem nome',
-          size: file.size || 0,
-          views: file.views || 0,
-          downloads: file.downloads || 0,
-          date_upload: file.date_upload || new Date().toISOString(),
-          date_last_view: file.date_last_view || new Date().toISOString(),
-          mime_type: file.mime_type || 'application/octet-stream',
-          hash_sha256: file.hash_sha256 || '',
-          can_edit: file.can_edit || false,
-          description: file.description || ''
-        }));
-      }
-
-      return {
-        id: data.id,
-        title: data.title || 'Sem título',
-        description: data.description || '',
-        date_created: data.date_created || new Date().toISOString(),
-        files: data.files || [],
-        can_edit: data.can_edit || false,
-        file_count: data.files?.length || 0
-      };
-    } catch (error) {
-      console.error(`Erro ao buscar detalhes do álbum ${listId}:`, error);
-      return {
-        id: listId,
-        title: 'Erro ao carregar',
-        description: '',
-        date_created: new Date().toISOString(),
-        files: [],
-        can_edit: false,
-        file_count: 0
-      };
     }
   }
 

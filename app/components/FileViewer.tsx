@@ -9,6 +9,7 @@ interface FileViewerProps {
 const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [thumbnailError, setThumbnailError] = useState(false);
 
   // Determinar o tipo de arquivo baseado no MIME type
   const isImage = file.mime_type?.startsWith('image/');
@@ -21,9 +22,20 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
   const downloadUrl = `${fileUrl}?download`;
   const thumbnailUrl = `https://pixeldrain.com/api/file/${file.id}/thumbnail`;
 
+  // Função de log de erro detalhada
+  const logError = (context: string, err?: any) => {
+    console.error(`[FileViewer Error] ${context}`, {
+      fileId: file.id,
+      fileName: file.name,
+      mimeType: file.mime_type,
+      errorDetails: err instanceof Error ? err.message : err
+    });
+  };
+
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setThumbnailError(false);
     
     // Simulando uma verificação da disponibilidade do arquivo
     const timer = setTimeout(() => {
@@ -32,6 +44,37 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
     
     return () => clearTimeout(timer);
   }, [file.id]);
+
+  // Função de fallback para thumbnails
+  const getThumbnail = () => {
+    if (thumbnailError) {
+      // Fallback para ícones de tipos de arquivo
+      const fileTypeIcons: { [key: string]: string } = {
+        'image': '/icons/image.svg',
+        'video': '/icons/video.svg',
+        'audio': '/icons/audio.svg',
+        'pdf': '/icons/pdf.svg',
+        'document': '/icons/document.svg',
+        'spreadsheet': '/icons/spreadsheet.svg',
+        'presentation': '/icons/presentation.svg',
+        'archive': '/icons/archive.svg',
+        'default': '/icons/file.svg'
+      };
+
+      // Lógica de seleção de ícone mais específica
+      if (file.mime_type?.startsWith('image/')) return fileTypeIcons['image'];
+      if (file.mime_type?.startsWith('video/')) return fileTypeIcons['video'];
+      if (file.mime_type?.startsWith('audio/')) return fileTypeIcons['audio'];
+      if (file.mime_type === 'application/pdf') return fileTypeIcons['pdf'];
+      if (file.mime_type?.includes('document') || file.mime_type?.includes('word')) return fileTypeIcons['document'];
+      if (file.mime_type?.includes('spreadsheet') || file.mime_type?.includes('excel')) return fileTypeIcons['spreadsheet'];
+      if (file.mime_type?.includes('presentation') || file.mime_type?.includes('powerpoint')) return fileTypeIcons['presentation'];
+      if (file.mime_type?.includes('archive') || file.mime_type?.includes('zip') || file.mime_type?.includes('rar')) return fileTypeIcons['archive'];
+      
+      return fileTypeIcons['default'];
+    }
+    return thumbnailUrl;
+  };
 
   if (loading) {
     return (
@@ -72,7 +115,10 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
               src={fileUrl}
               alt={file.name}
               className="max-h-[600px] object-contain mx-auto"
-              onError={() => setError('Não foi possível carregar a imagem.')}
+              onError={(e) => {
+                logError('Erro ao carregar imagem', e);
+                setError('Não foi possível carregar a imagem.');
+              }}
             />
           </div>
         )}
@@ -84,7 +130,10 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
               controls
               autoPlay
               className="w-full h-full"
-              onError={() => setError('Não foi possível reproduzir o vídeo.')}
+              onError={(e) => {
+                logError('Erro ao reproduzir vídeo', e);
+                setError('Não foi possível reproduzir o vídeo.');
+              }}
             >
               Seu navegador não suporta a reprodução de vídeos.
             </video>
@@ -97,7 +146,10 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
               src={fileUrl}
               controls
               className="w-full"
-              onError={() => setError('Não foi possível reproduzir o áudio.')}
+              onError={(e) => {
+                logError('Erro ao reproduzir áudio', e);
+                setError('Não foi possível reproduzir o áudio.');
+              }}
             >
               Seu navegador não suporta a reprodução de áudios.
             </audio>
@@ -110,7 +162,10 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
               src={`${fileUrl}#toolbar=0`}
               className="w-full h-[600px]"
               title={file.name}
-              onError={() => setError('Não foi possível carregar o PDF.')}
+              onError={(e) => {
+                logError('Erro ao carregar PDF', e);
+                setError('Não foi possível carregar o PDF.');
+              }}
             />
           </div>
         )}
@@ -118,10 +173,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
         {!isImage && !isVideo && !isAudio && !isPdf && (
           <div className="p-8 flex flex-col items-center justify-center bg-gray-100 rounded-lg">
             <img
-              src={thumbnailUrl}
+              src={getThumbnail()}
               alt="Thumbnail"
               className="w-32 h-32 object-contain mb-4"
-              onError={(e) => (e.currentTarget.style.display = 'none')}
+              onError={(e) => {
+                logError('Erro ao carregar thumbnail', e);
+                setThumbnailError(true);
+              }}
             />
             <p className="text-center mb-4">
               Este tipo de arquivo não pode ser visualizado diretamente no navegador.
@@ -148,7 +206,11 @@ const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
           Compartilhar: 
           <button
             className="ml-2 text-blue-500 hover:underline"
-            onClick={() => navigator.clipboard.writeText(`https://pixeldrain.com/u/${file.id}`)}
+            onClick={() => {
+              navigator.clipboard.writeText(`https://pixeldrain.com/u/${file.id}`);
+              // Adicionar feedback visual de link copiado
+              alert('Link copiado para área de transferência!');
+            }}
           >
             Copiar Link
           </button>
