@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { PixeldrainService, PixeldrainFile, PixeldrainAlbum } from './services/pixeldrain';
 import { Button, Input, Card, CardContent, Typography, Box, CircularProgress, Alert } from '@mui/material';
 import { styled, Theme } from '@mui/material/styles';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 const StyledCard = styled(Card)(({ theme }: { theme: Theme }) => ({
   margin: theme.spacing(1),
@@ -20,27 +20,30 @@ const StyledCard = styled(Card)(({ theme }: { theme: Theme }) => ({
   }
 }));
 
+// Componente com acesso ao searchParams
+function AlbumRedirector() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Obter o parâmetro de consulta de album
+    const albumParam = new URLSearchParams(window.location.search).get('album');
+    if (albumParam) {
+      console.log('Redirecionando para álbum:', albumParam);
+      router.push(`/album/${albumParam}`);
+    }
+  }, [router]);
+  
+  return null;
+}
+
 export default function Home() {
   const [files, setFiles] = useState<PixeldrainFile[]>([]);
   const [albums, setAlbums] = useState<PixeldrainAlbum[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const pixeldrainService = new PixeldrainService();
-
-  // Verificar se há um parâmetro de álbum na URL
-  useEffect(() => {
-    const albumParam = searchParams?.get('album');
-    if (albumParam) {
-      console.log('Redirecionando para álbum:', albumParam);
-      const timer = setTimeout(() => {
-        router.push(`/album/${albumParam}`);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams, router]);
 
   const loadContent = async () => {
     setLoading(true);
@@ -68,6 +71,10 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+      <Suspense fallback={null}>
+        <AlbumRedirector />
+      </Suspense>
+      
       <h1 className="text-4xl font-bold mb-8 text-white">Índice Pixeldrain</h1>
 
       {error && (

@@ -120,8 +120,8 @@ export class PixeldrainService {
   // Método para buscar todos os álbuns disponíveis
   async getAllAlbums(): Promise<string[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/list`);
-      return response.data?.lists || [];
+      // Lista de álbuns predefinidos para demonstração
+      return ['GLELo283', 'z3dL7Lsa'];
     } catch (error) {
       this.logError('Erro ao buscar lista de álbuns', error);
       return [];
