@@ -3,8 +3,8 @@ const nextConfig = {
   // Habilitando exportação estática
   output: 'export',
   
-  // Remover caminho base específico
-  // basePath: '/indexforpixeldrain',
+  // Configurando o caminho base para o GitHub Pages
+  basePath: '/indexforpixeldrain',
   
   // Configurações de imagens
   images: {
@@ -42,63 +42,8 @@ const nextConfig = {
 
   reactStrictMode: true,
 
-  // Configurações de proxy
-  async rewrites() {
-    return [
-      // Rotas para álbuns
-      {
-        source: '/album/:id',
-        destination: '/album/[id]/page.html'
-      },
-      {
-        source: '/proxy/pixeldrain/list/:id',
-        destination: 'https://pixeldrain.com/api/list/:id'
-      },
-      {
-        source: '/proxy/pixeldrain/list',
-        destination: 'https://pixeldrain.com/api/list'
-      },
-      // Rotas para arquivos
-      {
-        source: '/proxy/pixeldrain/file/:id',
-        destination: 'https://pixeldrain.com/api/file/:id'
-      },
-      {
-        source: '/proxy/pixeldrain/file/:id/thumbnail',
-        destination: 'https://pixeldrain.com/api/file/:id/thumbnail'
-      }
-    ];
-  },
-
-  // Configurações de CORS
-  async headers() {
-    return [
-      // Configurações para rotas de proxy do Pixeldrain
-      {
-        source: '/proxy/pixeldrain/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { 
-            key: 'Access-Control-Allow-Headers', 
-            value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-          },
-          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
-          { key: 'Pragma', value: 'no-cache' },
-          { key: 'Expires', value: '0' }
-        ]
-      },
-      // Configurações para imagens do Next.js
-      {
-        source: '/_next/image/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET' }
-        ]
-      }
-    ];
-  }
+  // As configurações de rewrites e headers não funcionam no modo de exportação estática
+  // Elas só funcionam em ambientes de servidor (Node.js)
 };
 
 module.exports = nextConfig; 

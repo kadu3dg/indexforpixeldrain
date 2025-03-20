@@ -30,7 +30,7 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private baseUrl = process.env.NEXT_PUBLIC_PIXELDRAIN_PROXY || '/proxy/pixeldrain';
+  private baseUrl = 'https://pixeldrain.com/api';
   private timeout = 10000; // 10 segundos de timeout
 
   // Método de log detalhado
@@ -123,10 +123,8 @@ export class PixeldrainService {
       const response = await axios.get(`${this.baseUrl}/list`);
       return response.data?.lists || [];
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        this.handleError(error, 'buscar lista de álbuns');
-      }
-      throw error;
+      this.logError('Erro ao buscar lista de álbuns', error);
+      return [];
     }
   }
 
@@ -180,52 +178,68 @@ export class PixeldrainService {
   }
 
   async getFiles(): Promise<PixeldrainFile[]> {
-    try {
-      const data = await this.fetchWithAuth('/user/files');
-      return data.files || [];
-    } catch (error) {
-      console.error('Erro ao buscar arquivos:', error);
-      return [];
-    }
+    // Arquivos de demonstração
+    return [
+      {
+        id: 'S8XO23s8',
+        name: 'Arquivo de demonstração 1.jpg',
+        size: 1024000,
+        views: 10,
+        downloads: 5,
+        date_upload: new Date().toISOString(),
+        date_last_view: new Date().toISOString(),
+        mime_type: 'image/jpeg',
+        hash_sha256: '',
+        can_edit: false
+      },
+      {
+        id: 'a2b4c6d8',
+        name: 'Arquivo de demonstração 2.pdf',
+        size: 2048000,
+        views: 5,
+        downloads: 2,
+        date_upload: new Date().toISOString(),
+        date_last_view: new Date().toISOString(),
+        mime_type: 'application/pdf',
+        hash_sha256: '',
+        can_edit: false
+      }
+    ];
   }
 
   async getUserLists(): Promise<PixeldrainAlbum[]> {
     try {
-      const data = await this.fetchWithAuth('/user/lists');
-      const lists = data.lists || [];
+      // Lista de álbuns predefinidos para demonstração
+      const demoAlbums = [
+        { id: 'GLELo283', title: 'Álbum de Demonstração 1' },
+        { id: 'z3dL7Lsa', title: 'Álbum de Demonstração 2' }
+      ];
       
-      // Buscar os detalhes de cada álbum para obter o número de arquivos
-      const albumsWithFileCount = await Promise.all(
-        lists.map(async (list: PixeldrainAlbum) => {
-          try {
-            const details = await this.getListDetails(list.id);
-            return {
-              ...list,
-              file_count: details.files.length
-            };
-          } catch (error) {
-            console.error(`Erro ao buscar detalhes do álbum ${list.id}:`, error);
-            return {
-              ...list,
-              file_count: 0
-            };
-          }
-        })
-      );
-
-      return albumsWithFileCount;
+      return demoAlbums.map(album => ({
+        id: album.id,
+        title: album.title,
+        description: 'Álbum de demonstração para o Pixeldrain',
+        date_created: new Date().toISOString(),
+        files: [],
+        can_edit: false,
+        file_count: 0
+      }));
     } catch (error) {
-      console.error('Erro ao buscar álbuns:', error);
+      console.error('Erro ao buscar listas do usuário:', error);
       return [];
     }
   }
 
   getFileViewUrl(fileId: string): string {
-    return `https://pixeldrain.com/v/${fileId}`;
+    return `https://pixeldrain.com/u/${fileId}`;
+  }
+
+  getFileDirectUrl(fileId: string): string {
+    return `${this.baseUrl}/file/${fileId}`;
   }
 
   getFileThumbnailUrl(fileId: string): string {
-    return `https://pixeldrain.com/api/file/${fileId}/thumbnail`;
+    return `${this.baseUrl}/file/${fileId}/thumbnail`;
   }
 
   async createAlbum(title: string, description: string = ''): Promise<PixeldrainAlbum> {
