@@ -10,15 +10,18 @@
       var path = window.location.pathname;
       var pathSegments = path.split('/');
       
+      // Definir o caminho base para o GitHub Pages
+      var basePath = '/indexforpixeldrain';
+      
       // Verificar se é uma rota de álbum
-      if (pathSegments[1] === 'album' && pathSegments.length >= 3) {
-        var albumId = pathSegments[2];
+      if (pathSegments.length >= 3 && pathSegments[2] === 'album' && pathSegments.length >= 4) {
+        var albumId = pathSegments[3];
         
         // Redirecionar para a página principal com parâmetro de consulta
-        window.location.href = '/?album=' + encodeURIComponent(albumId);
+        window.location.href = basePath + '/?album=' + encodeURIComponent(albumId);
       } else {
         // Redirecionar para a página inicial caso contrário
-        window.location.href = '/';
+        window.location.href = basePath + '/';
       }
     })();
   </script>

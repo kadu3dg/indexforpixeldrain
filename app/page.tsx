@@ -30,6 +30,9 @@ function AlbumRedirector() {
     if (albumParam) {
       console.log('Redirecionando para álbum:', albumParam);
       router.push(`/album/${albumParam}`);
+      
+      // Para debugging
+      console.log(`Caminho completo após redirecionamento: ${window.location.href}`);
     }
   }, [router]);
   
