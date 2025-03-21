@@ -30,30 +30,47 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private baseUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://pixeldrain.com/api');
+  private baseUrl = 'https://api.allorigins.win/get?url=';
   private apiKey = 'b34f7bc6-f084-40ca-aedd-eab6d8aa8a85';
   private timeout = 15000;
 
-  private getHeaders() {
-    return {
+  private getAuthUrl(endpoint: string): string {
+    const auth = Buffer.from(this.apiKey + ':').toString('base64');
+    const pixeldrainUrl = `https://pixeldrain.com/api${endpoint}`;
+    const headers = {
+      'Authorization': `Basic ${auth}`,
       'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`
+      'Content-Type': 'application/json'
     };
+    
+    return `${this.baseUrl}${encodeURIComponent(pixeldrainUrl)}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
   }
 
   private async makeRequest<T>(endpoint: string, options: any = {}): Promise<T> {
-    const url = `${this.baseUrl}${encodeURIComponent(endpoint)}`;
+    const url = this.getAuthUrl(endpoint);
     const config = {
       ...options,
       timeout: this.timeout,
-      headers: this.getHeaders(),
-      withCredentials: false
+      headers: {
+        'Accept': 'application/json'
+      }
     };
 
     try {
       const response = await axios(url, config);
-      return response.data;
+      
+      if (!response.data || !response.data.contents) {
+        throw new Error('Resposta inválida do servidor proxy');
+      }
+
+      // O conteúdo real está em response.data.contents como string
+      const contents = JSON.parse(response.data.contents);
+      
+      if (response.data.status && response.data.status.http_code === 403) {
+        throw new Error('Acesso negado. Verifique sua API key.');
+      }
+
+      return contents;
     } catch (error) {
       this.logError(`Erro na requisição para ${endpoint}`, error);
       if (axios.isAxiosError(error)) {
