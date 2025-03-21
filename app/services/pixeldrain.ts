@@ -33,7 +33,7 @@ export class PixeldrainService {
   private baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://cors-anywhere.herokuapp.com/https://pixeldrain.com/api'
     : 'https://pixeldrain.com/api';
-  private apiKey = 'aa73d120-100e-426e-93ba-c7e1569b0322';
+  private apiKey = 'b34f7bc6-f084-40ca-aedd-eab6d8aa8a85';
   private timeout = 15000;
 
   private getHeaders() {
