@@ -30,20 +30,45 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://cors-anywhere.herokuapp.com/https://pixeldrain.com/api'
-    : 'https://pixeldrain.com/api';
+  private baseUrl = 'https://pixeldrain.com/api';
   private apiKey = 'b34f7bc6-f084-40ca-aedd-eab6d8aa8a85';
   private timeout = 15000;
 
   private getHeaders() {
+    const auth = Buffer.from(this.apiKey + ':').toString('base64');
     return {
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Origin': window.location.origin,
-      'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${auth}`,
+      'X-Requested-With': 'XMLHttpRequest'
     };
+  }
+
+  private async makeRequest<T>(endpoint: string, options: any = {}): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const config = {
+      ...options,
+      timeout: this.timeout,
+      headers: {
+        ...this.getHeaders(),
+        ...options.headers
+      },
+      withCredentials: false
+    };
+
+    try {
+      const response = await axios(url, config);
+      return response.data;
+    } catch (error) {
+      this.logError(`Erro na requisição para ${endpoint}`, error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          throw new Error('Acesso negado. Verifique sua API key.');
+        }
+        throw new Error(error.response?.data?.message || error.message);
+      }
+      throw error;
+    }
   }
 
   // Método de log detalhado
@@ -58,28 +83,18 @@ export class PixeldrainService {
     });
   }
 
-  // Método para buscar detalhes de um álbum com diagnóstico detalhado
+  // Método para buscar detalhes de um álbum
   async getListDetails(albumId: string): Promise<PixeldrainAlbum> {
-    console.log(`[Diagnóstico] Tentando carregar álbum: ${albumId}`);
-    console.log(`[Diagnóstico] URL base: ${this.baseUrl}`);
-
     try {
-      const response = await axios.get(`${this.baseUrl}/list/${albumId}`, {
-        timeout: this.timeout,
-        headers: this.getHeaders()
-      });
-      
-      console.log('[Diagnóstico] Resposta do álbum recebida:', {
-        status: response.status,
-        dataReceived: !!response.data,
-        fileCount: response.data?.files?.length || 0
+      const data = await this.makeRequest<any>(`/list/${albumId}`, {
+        method: 'GET'
       });
 
-      if (!response.data || !response.data.files) {
+      if (!data || !data.files) {
         throw new Error('Dados do álbum inválidos ou vazios');
       }
 
-      const validFiles = response.data.files.map((file: any) => ({
+      const validFiles = data.files.map((file: any) => ({
         id: file.id || '',
         name: file.name || 'Arquivo sem nome',
         size: file.size || 0,
@@ -94,46 +109,24 @@ export class PixeldrainService {
       }));
 
       return {
-        ...response.data,
+        ...data,
         files: validFiles,
         file_count: validFiles.length
       };
     } catch (error) {
       this.logError('Erro ao buscar detalhes do álbum', error);
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          switch (error.response.status) {
-            case 404:
-              throw new Error(`Álbum ${albumId} não encontrado`);
-            case 403:
-              throw new Error(`Acesso negado ao álbum ${albumId}. Verifique sua API key.`);
-            case 500:
-              throw new Error(`Erro interno do servidor ao buscar álbum ${albumId}`);
-            case 0:
-              throw new Error(`Erro de CORS ao acessar o álbum ${albumId}. Tente novamente mais tarde.`);
-          }
-        } else if (error.request) {
-          throw new Error(`Sem resposta do servidor ao buscar álbum ${albumId}. Verifique sua conexão.`);
-        }
-      }
-      throw new Error(`Falha ao carregar álbum ${albumId}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      throw error;
     }
   }
 
   // Método para buscar todos os álbuns disponíveis
   async getUserLists(): Promise<PixeldrainAlbum[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/user/lists`, {
-        timeout: this.timeout,
-        headers: this.getHeaders()
+      const data = await this.makeRequest<any[]>('/user/lists', {
+        method: 'GET'
       });
 
-      if (!Array.isArray(response.data)) {
-        console.error('Resposta inválida da API:', response.data);
-        return [];
-      }
-
-      return response.data.map((album: any) => ({
+      return data.map((album: any) => ({
         id: album.id || '',
         title: album.title || 'Álbum sem título',
         description: album.description || '',
@@ -144,26 +137,17 @@ export class PixeldrainService {
       }));
     } catch (error) {
       this.logError('Erro ao buscar listas do usuário', error);
-      if (axios.isAxiosError(error) && error.response?.status === 403) {
-        throw new Error('Acesso negado. Verifique sua API key.');
-      }
-      return [];
+      throw error;
     }
   }
 
   async getFiles(): Promise<PixeldrainFile[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/user/files`, {
-        timeout: this.timeout,
-        headers: this.getHeaders()
+      const data = await this.makeRequest<any[]>('/user/files', {
+        method: 'GET'
       });
 
-      if (!Array.isArray(response.data)) {
-        console.error('Resposta inválida da API:', response.data);
-        return [];
-      }
-
-      return response.data.map((file: any) => ({
+      return data.map((file: any) => ({
         id: file.id || '',
         name: file.name || 'Arquivo sem nome',
         size: file.size || 0,
@@ -178,10 +162,7 @@ export class PixeldrainService {
       }));
     } catch (error) {
       this.logError('Erro ao buscar arquivos do usuário', error);
-      if (axios.isAxiosError(error) && error.response?.status === 403) {
-        throw new Error('Acesso negado. Verifique sua API key.');
-      }
-      return [];
+      throw error;
     }
   }
 
