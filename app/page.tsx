@@ -30,9 +30,6 @@ function AlbumRedirector() {
     if (albumParam) {
       console.log('Redirecionando para álbum:', albumParam);
       router.push(`/album/${albumParam}`);
-      
-      // Para debugging
-      console.log(`Caminho completo após redirecionamento: ${window.location.href}`);
     }
   }, [router]);
   
@@ -60,9 +57,18 @@ export default function Home() {
       // Carregar álbuns
       const albumsData = await pixeldrainService.getUserLists();
       setAlbums(albumsData);
+
+      // Verificar se estamos em modo de desenvolvimento
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Demo Mode] Aplicação rodando em modo de desenvolvimento');
+      }
     } catch (error) {
       console.error('Erro ao carregar conteúdo:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao carregar conteúdo');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Ocorreu um erro ao carregar o conteúdo. Por favor, tente novamente mais tarde.';
+      
+      setError(`${errorMessage} ${process.env.NODE_ENV === 'development' ? '(Modo de Desenvolvimento)' : ''}`);
     } finally {
       setLoading(false);
     }

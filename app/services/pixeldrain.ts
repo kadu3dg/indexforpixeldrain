@@ -30,8 +30,10 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private baseUrl = 'https://pixeldrain.com/api';
-  private timeout = 10000; // 10 segundos de timeout
+  private baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://cors-anywhere.herokuapp.com/https://pixeldrain.com/api'
+    : 'https://pixeldrain.com/api';
+  private timeout = 15000; // Aumentando o timeout para 15 segundos
 
   // Método de log detalhado
   private logError(context: string, error: any) {
@@ -51,12 +53,21 @@ export class PixeldrainService {
     console.log(`[Diagnóstico] URL base: ${this.baseUrl}`);
 
     try {
+      // Verificar primeiro se o álbum está disponível
+      const isAvailable = await this.checkAlbumAvailability(albumId);
+      console.log(`[Diagnóstico] Status da verificação de disponibilidade:`, { isAvailable });
+
+      if (!isAvailable) {
+        throw new Error(`Álbum ${albumId} não está disponível`);
+      }
+
       const response = await axios.get(`${this.baseUrl}/list/${albumId}`, {
         timeout: this.timeout,
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'Origin': window.location.origin
         }
       });
       
@@ -105,10 +116,12 @@ export class PixeldrainService {
               throw new Error(`Acesso negado ao álbum ${albumId}`);
             case 500:
               throw new Error(`Erro interno do servidor ao buscar álbum ${albumId}`);
+            case 0:
+              throw new Error(`Erro de CORS ao acessar o álbum ${albumId}. Tente novamente mais tarde.`);
           }
         } else if (error.request) {
           // A requisição foi feita, mas nenhuma resposta foi recebida
-          throw new Error(`Sem resposta do servidor ao buscar álbum ${albumId}`);
+          throw new Error(`Sem resposta do servidor ao buscar álbum ${albumId}. Verifique sua conexão.`);
         }
       }
 
@@ -209,21 +222,38 @@ export class PixeldrainService {
 
   async getUserLists(): Promise<PixeldrainAlbum[]> {
     try {
-      // Lista de álbuns predefinidos para demonstração
-      const demoAlbums = [
-        { id: 'GLELo283', title: 'Álbum de Demonstração 1' },
-        { id: 'z3dL7Lsa', title: 'Álbum de Demonstração 2' }
-      ];
+      // Modo de demonstração - verificar se estamos em ambiente de desenvolvimento
+      const isDevelopment = process.env.NODE_ENV === 'development';
       
-      return demoAlbums.map(album => ({
-        id: album.id,
-        title: album.title,
-        description: 'Álbum de demonstração para o Pixeldrain',
-        date_created: new Date().toISOString(),
-        files: [],
-        can_edit: false,
-        file_count: 0
-      }));
+      if (isDevelopment) {
+        console.log('[Demo Mode] Retornando álbuns de demonstração');
+        // Lista de álbuns predefinidos para demonstração
+        const demoAlbums = [
+          { 
+            id: 'demo1',
+            title: 'Álbum de Demonstração 1',
+            description: 'Este é um álbum de demonstração (modo de desenvolvimento)',
+            date_created: new Date().toISOString(),
+            files: [],
+            can_edit: false,
+            file_count: 0
+          },
+          {
+            id: 'demo2',
+            title: 'Álbum de Demonstração 2',
+            description: 'Este é um álbum de demonstração (modo de desenvolvimento)',
+            date_created: new Date().toISOString(),
+            files: [],
+            can_edit: false,
+            file_count: 0
+          }
+        ];
+        return demoAlbums;
+      }
+
+      // Em produção, tentar buscar álbuns reais
+      // TODO: Implementar a busca real de álbuns quando necessário
+      return [];
     } catch (error) {
       console.error('Erro ao buscar listas do usuário:', error);
       return [];
