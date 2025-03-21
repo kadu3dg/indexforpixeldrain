@@ -30,29 +30,24 @@ export interface PixeldrainAlbum {
 }
 
 export class PixeldrainService {
-  private baseUrl = 'https://pixeldrain.com/api';
+  private baseUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://pixeldrain.com/api');
   private apiKey = 'b34f7bc6-f084-40ca-aedd-eab6d8aa8a85';
   private timeout = 15000;
 
   private getHeaders() {
-    const auth = Buffer.from(this.apiKey + ':').toString('base64');
     return {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': `Basic ${auth}`,
-      'X-Requested-With': 'XMLHttpRequest'
+      'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`
     };
   }
 
   private async makeRequest<T>(endpoint: string, options: any = {}): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = `${this.baseUrl}${encodeURIComponent(endpoint)}`;
     const config = {
       ...options,
       timeout: this.timeout,
-      headers: {
-        ...this.getHeaders(),
-        ...options.headers
-      },
+      headers: this.getHeaders(),
       withCredentials: false
     };
 
@@ -86,9 +81,7 @@ export class PixeldrainService {
   // Método para buscar detalhes de um álbum
   async getListDetails(albumId: string): Promise<PixeldrainAlbum> {
     try {
-      const data = await this.makeRequest<any>(`/list/${albumId}`, {
-        method: 'GET'
-      });
+      const data = await this.makeRequest<any>(`/list/${albumId}`);
 
       if (!data || !data.files) {
         throw new Error('Dados do álbum inválidos ou vazios');
@@ -122,9 +115,7 @@ export class PixeldrainService {
   // Método para buscar todos os álbuns disponíveis
   async getUserLists(): Promise<PixeldrainAlbum[]> {
     try {
-      const data = await this.makeRequest<any[]>('/user/lists', {
-        method: 'GET'
-      });
+      const data = await this.makeRequest<any[]>('/user/lists');
 
       return data.map((album: any) => ({
         id: album.id || '',
@@ -143,9 +134,7 @@ export class PixeldrainService {
 
   async getFiles(): Promise<PixeldrainFile[]> {
     try {
-      const data = await this.makeRequest<any[]>('/user/files', {
-        method: 'GET'
-      });
+      const data = await this.makeRequest<any[]>('/user/files');
 
       return data.map((file: any) => ({
         id: file.id || '',
@@ -171,38 +160,38 @@ export class PixeldrainService {
   }
 
   getFileDirectUrl(fileId: string): string {
-    return `${this.baseUrl}/file/${fileId}`;
+    return `https://pixeldrain.com/api/file/${fileId}`;
   }
 
   getFileThumbnailUrl(fileId: string): string {
-    return `${this.baseUrl}/file/${fileId}/thumbnail`;
+    return `https://pixeldrain.com/api/file/${fileId}/thumbnail`;
   }
 
   async createAlbum(title: string, description: string = ''): Promise<PixeldrainAlbum> {
-    return this.fetchWithAuth('/list', {
+    return this.makeRequest<PixeldrainAlbum>('/list', {
       method: 'POST',
-      body: JSON.stringify({
+      data: {
         title,
         description,
         files: []
-      })
+      }
     });
   }
 
   async addFileToAlbum(albumId: string, fileId: string): Promise<void> {
-    await this.fetchWithAuth(`/list/${albumId}/file/${fileId}`, {
+    await this.makeRequest<void>(`/list/${albumId}/file/${fileId}`, {
       method: 'POST'
     });
   }
 
   async removeFileFromAlbum(albumId: string, fileId: string): Promise<void> {
-    await this.fetchWithAuth(`/list/${albumId}/file/${fileId}`, {
+    await this.makeRequest<void>(`/list/${albumId}/file/${fileId}`, {
       method: 'DELETE'
     });
   }
 
   async deleteAlbum(albumId: string): Promise<void> {
-    await this.fetchWithAuth(`/list/${albumId}`, {
+    await this.makeRequest<void>(`/list/${albumId}`, {
       method: 'DELETE'
     });
   }
