@@ -151,9 +151,16 @@ export class PixeldrainService {
 
   async getFiles(): Promise<PixeldrainFile[]> {
     try {
-      const data = await this.makeRequest<any[]>('/user/files');
+      const response = await this.makeRequest<any>('/user/files');
+      
+      // Verifica se a resposta é válida e tem a propriedade files
+      if (!response || !Array.isArray(response)) {
+        console.warn('Resposta inválida da API:', response);
+        return [];
+      }
 
-      return data.map((file: any) => ({
+      // Mapeia os arquivos garantindo que todos os campos necessários existam
+      return response.map((file: any) => ({
         id: file.id || '',
         name: file.name || 'Arquivo sem nome',
         size: file.size || 0,
