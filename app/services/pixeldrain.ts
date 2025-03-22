@@ -66,8 +66,14 @@ export class PixeldrainService {
       // O conteúdo real está em response.data.contents como string
       const contents = JSON.parse(response.data.contents);
       
-      if (response.data.status && response.data.status.http_code === 403) {
-        throw new Error('Acesso negado. Verifique sua API key.');
+      // Verifica se há erro de autenticação
+      if (contents.success === false && contents.value === 'authentication_required') {
+        throw new Error('Erro de autenticação: Verifique sua API key');
+      }
+
+      // Verifica outros erros da API
+      if (contents.success === false) {
+        throw new Error(`Erro da API: ${contents.message || 'Erro desconhecido'}`);
       }
 
       return contents;
@@ -132,9 +138,15 @@ export class PixeldrainService {
   // Método para buscar todos os álbuns disponíveis
   async getUserLists(): Promise<PixeldrainAlbum[]> {
     try {
-      const data = await this.makeRequest<any[]>('/user/lists');
+      const response = await this.makeRequest<any>('/user/lists');
 
-      return data.map((album: any) => ({
+      // Se a resposta não for um array, retorna array vazio
+      if (!Array.isArray(response)) {
+        console.warn('Resposta inválida da API (getUserLists):', response);
+        return [];
+      }
+
+      return response.map((album: any) => ({
         id: album.id || '',
         title: album.title || 'Álbum sem título',
         description: album.description || '',
@@ -153,13 +165,12 @@ export class PixeldrainService {
     try {
       const response = await this.makeRequest<any>('/user/files');
       
-      // Verifica se a resposta é válida e tem a propriedade files
-      if (!response || !Array.isArray(response)) {
-        console.warn('Resposta inválida da API:', response);
+      // Se a resposta não for um array, retorna array vazio
+      if (!Array.isArray(response)) {
+        console.warn('Resposta inválida da API (getFiles):', response);
         return [];
       }
 
-      // Mapeia os arquivos garantindo que todos os campos necessários existam
       return response.map((file: any) => ({
         id: file.id || '',
         name: file.name || 'Arquivo sem nome',
